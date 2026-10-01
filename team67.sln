@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BucHunt", "BucHunt.csproj", "{655D64EA-9510-DFD8-93E7-D13D8249BCD9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{655D64EA-9510-DFD8-93E7-D13D8249BCD9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{655D64EA-9510-DFD8-93E7-D13D8249BCD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{655D64EA-9510-DFD8-93E7-D13D8249BCD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{655D64EA-9510-DFD8-93E7-D13D8249BCD9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5914A01D-46D9-487A-A1D1-00BF420D32FD}
+	EndGlobalSection
+EndGlobal
