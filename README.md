@@ -10,6 +10,69 @@ Players can participate in a hunt, view their tasks, travel to task locations, a
 
 The goal of BucHunt is to provide a scavenger hunt system that works across phones, tablets, and computers without requiring users to install a separate application.
 
+## How to Deploy
+
+The application is manually deployed to a headless Ubuntu Server VM running .NET 9.
+
+### 1. Clone the GitHub Repository
+
+For the initial deployment, clone the repository:
+
+```bash
+cd ~
+git clone https://github.com/DemurestPie/team67.git
+cd team67
+```
+
+### 2. Pull the Latest Code
+
+For future deployments, navigate to the existing repository and pull the newest changes:
+
+```bash
+cd ~/team67
+git checkout master
+git pull origin master
+```
+
+### 3. Restore Dependencies
+
+```bash
+dotnet restore
+```
+
+### 4. Build the Application
+
+Build the application in Release mode:
+
+```bash
+dotnet build -c Release
+```
+
+Make sure the build completes successfully before continuing.
+
+### 5. Run the Application
+
+Start the application:
+
+```bash
+dotnet run -c Release
+```
+
+The application will continue running in the terminal until it is stopped with `Ctrl+C`.
+
+### Quick Deployment
+
+After the repository has already been cloned, use the following each time the server is started or the application needs to be updated:
+
+```bash
+cd ~/team67
+git checkout master
+git pull origin master
+dotnet restore
+dotnet build -c Release
+dotnet run -c Release
+```
+
 ## Main Users
 
 ### Player
