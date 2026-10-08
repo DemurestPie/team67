@@ -24,7 +24,7 @@ a {
 }
 
 .border-top {
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid #e5e5e5;;
 }
 .border-bottom {
   border-bottom: 1px solid #e5e5e5;
@@ -48,3 +48,4 @@ button.accept-policy {
   line-height: 60px;
   border-top: 1px solid black !important;
 }
+

@@ -18,6 +18,8 @@ html {
 }
 
 body {
+  font-family: 'Bangers';
+  letter-spacing: 1px;
   margin-bottom: 60px;
   background-color: gold;
   color: white;
@@ -52,3 +54,10 @@ body {
   border: 2px solid black;
 }
 
+
+.logos
+{
+  width: 500px; 
+  height: 500px; 
+  margin-bottom: -20px;
+}
