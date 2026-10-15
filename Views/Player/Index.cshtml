@@ -4,12 +4,19 @@
 
 <div class="text-left" style="margin-top: -60px;">
     <header>
-            <img src="~/assets/Hunt-Tasks-logo.png" alt="ScavengeRUS Logo" class="logos" style="margin-left: -100px;" />
+        <img src="~/assets/Hunt-Tasks-logo.png" alt="ScavengeRUS Logo" class="logos" style="margin-left: -100px;" />
     </header>
+
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @ViewBag.ErrorMessage
+        </div>
+    }
 
     <section>
         <h2>Available Tasks</h2>
-
+        
         <ul>
             <li>Find the Buccaneer Statue</li>
             <li>Visit the Sherrod Library</li>
@@ -19,7 +26,7 @@
             <li>Find a Piece of ETSU Artwork</li>
             <li>Take a Photo at an ETSU Landmark</li>
             <li>Locate a Designated Scavenger Hunt Checkpoint</li>
-</ul>
-        
+        </ul>
+
     </section>
 </div>
