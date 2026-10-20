@@ -18,7 +18,7 @@ namespace team67.Controllers
         {
             string filePath = Path.Combine(environment.ContentRootPath, "Data", "tasks.json");
 
-            List<ParsedTasks> parsedTasks = new List<ParsedTasks>();
+            List<ParsedTasks>? parsedTasks = new List<ParsedTasks>();
 
             try
             {
