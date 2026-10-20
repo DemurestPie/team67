@@ -28,6 +28,18 @@
                 {
                     <li>
                         Task @task.ID: @task.Label
+
+                        @if (!task.Completed)
+                        {
+                            <form asp-controller="Player" asp-action="CompleteTask" method="post" style="display: inline;">
+                                <input type="hidden" name="id" value="@task.ID" />
+                                <button type="submit" class="btn btn-primary">Complete Task</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span>Completed</span>
+                        }
                     </li>
                 }
             </ul>
