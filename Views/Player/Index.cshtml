@@ -23,7 +23,7 @@
         }
         else
         {
-            <ul>
+            <ul id="taskList">
                 @foreach (ParsedTasks task in Model)
                 {
                     <li>
@@ -34,3 +34,11 @@
         }
     </section>
 </div>
+
+<script src="~/js/taskSorting.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        sortTasks();
+    });
+</script>
