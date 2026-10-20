@@ -18,3 +18,27 @@ function sortTasks() {
         taskList.appendChild(task);
     });
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+    const taskList = document.getElementById("taskList");
+
+    if (!taskList) {
+        return;
+    }
+
+    const observer = new MutationObserver(function (mutations) {
+        for (const mutation of mutations) {
+            if (mutation.type === "attributes" &&
+                mutation.attributeName === "class") {
+                sortTasks();
+                break;
+            }
+        }
+    });
+
+    observer.observe(taskList, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["class"]
+    });
+});
