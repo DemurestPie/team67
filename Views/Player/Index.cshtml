@@ -4,12 +4,19 @@
 
 <div class="text-left" style="margin-top: -60px;">
     <header>
-            <img src="~/assets/Hunt-Tasks-logo.png" alt="ScavengeRUS Logo" class="logos" style="margin-left: -100px;" />
+        <img src="~/assets/Hunt-Tasks-logo.png" alt="ScavengeRUS Logo" class="logos" style="margin-left: -100px;" />
     </header>
+
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @ViewBag.ErrorMessage
+        </div>
+    }
 
     <section>
         <h2>Available Tasks</h2>
-
+        
         <ul>
             @foreach (ParsedTasks task in Model)
             {
