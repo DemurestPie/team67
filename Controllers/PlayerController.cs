@@ -1,6 +1,6 @@
+
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
-using System.Dynamic;
 using BucHunt.Models;
 
 namespace team67.Controllers
