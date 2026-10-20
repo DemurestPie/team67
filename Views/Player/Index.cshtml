@@ -26,14 +26,19 @@
             <ul id="taskList">
                 @foreach (ParsedTasks task in Model)
                 {
-                    <li>
+                    <li class="@(task.Completed ? "task-completed" : "")">
                         Task @task.ID: @task.Label
 
                         @if (!task.Completed)
                         {
-                            <form asp-controller="Player" asp-action="CompleteTask" method="post" style="display: inline;">
+                            <form asp-controller="Player"
+                                  asp-action="CompleteTask"
+                                  method="post"
+                                  style="display: inline;">
                                 <input type="hidden" name="id" value="@task.ID" />
-                                <button type="submit" class="btn btn-primary">Complete Task</button>
+                                <button type="submit" class="btn btn-primary">
+                                    Complete Task
+                                </button>
                             </form>
                         }
                         else
