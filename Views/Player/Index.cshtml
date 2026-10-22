@@ -26,7 +26,7 @@
             <ul id="taskList">
                 @foreach (ParsedTasks task in Model)
                 {
-                    <li class="@(task.Completed ? "task-completed" : "")">
+                    <li class="task-row @(task.Completed ? "task-completed" : "")" data-task-id="@task.ID">
                         Task @task.ID: @task.Label
 
                         @if (!task.Completed)
@@ -36,7 +36,7 @@
                                   method="post"
                                   style="display: inline;">
                                 <input type="hidden" name="id" value="@task.ID" />
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary" data-task-id="@task.ID">
                                     Complete Task
                                 </button>
                             </form>
