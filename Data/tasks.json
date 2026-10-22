@@ -1,0 +1,34 @@
+[
+  {
+    "id": 1,
+    "label": "Find the Buccaneer Statue"
+  },
+  {
+    "id": 2,
+    "label": "Visit the Sherrod Library"
+  },
+  {
+    "id": 3,
+    "label": "Locate the Culp Student Center"
+  },
+  {
+    "id": 4,
+    "label": "Find the Mini-Dome"
+  },
+  {
+    "id": 5,
+    "label": "Visit the Campus Center Building"
+  },
+  {
+    "id": 6,
+    "label": "Find a Piece of ETSU Artwork"
+  },
+  {
+    "id": 7,
+    "label": "Take a Photo at an ETSU Landmark"
+  },
+  {
+    "id": 8,
+    "label": "Locate a Designated Scavenger Hunt Checkpoint"
+  }
+]

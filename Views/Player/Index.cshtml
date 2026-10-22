@@ -1,25 +1,61 @@
+@using BucHunt.Models
+
 @{
     ViewData["Title"] = "Hunt Tasks";
 }
 
 <div class="text-left" style="margin-top: -60px;">
     <header>
-            <img src="~/assets/Hunt-Tasks-logo.png" alt="ScavengeRUS Logo" class="logos" style="margin-left: -100px;" />
+        <img src="~/assets/Hunt-Tasks-logo.png"
+             alt="ScavengeRUS Logo"
+             class="logos"
+             style="margin-left: -100px;" />
     </header>
 
     <section>
         <h2>Available Tasks</h2>
 
-        <ul>
-            <li>Find the Buccaneer Statue</li>
-            <li>Visit the Sherrod Library</li>
-            <li>Locate the Culp Student Center</li>
-            <li>Find the Mini-Dome</li>
-            <li>Visit the Campus Center Building</li>
-            <li>Find a Piece of ETSU Artwork</li>
-            <li>Take a Photo at an ETSU Landmark</li>
-            <li>Locate a Designated Scavenger Hunt Checkpoint</li>
-</ul>
-        
+        @if (ViewBag.ErrorMessage != null)
+        {
+            <div class="alert alert-danger" role="alert">
+                @ViewBag.ErrorMessage
+            </div>
+        }
+        else
+        {
+            <ul id="taskList">
+                @foreach (ParsedTasks task in Model)
+                {
+                    <li class="@(task.Completed ? "task-completed" : "")">
+                        Task @task.ID: @task.Label
+
+                        @if (!task.Completed)
+                        {
+                            <form asp-controller="Player"
+                                  asp-action="CompleteTask"
+                                  method="post"
+                                  style="display: inline;">
+                                <input type="hidden" name="id" value="@task.ID" />
+                                <button type="submit" class="btn btn-primary">
+                                    Complete Task
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span>Completed</span>
+                        }
+                    </li>
+                }
+            </ul>
+        }
     </section>
 </div>
+
+<script src="~/js/taskSorting.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        sortTasks();
+    });
+</script>
