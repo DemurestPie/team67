@@ -16,21 +16,6 @@ set -e
 
 REPO_URL="https://github.com/DemurestPie/team67.git"
 
-# Check if script is running inside a git repository. If not, ask user wants to clone it. If yes, clone it. If no, exit the script.
-if [ ! -d "team67" ]; then
-	echo -e "${RED}Error: This script must be run inside a git repository.${NC}"
-	read -p "Do you want to clone the repository? (y/n): " CLONE
-	if [[ "$CLONE" == "y" || "$CLONE" == "Y" || -z "$CLONE" ]]; then
-		echo -e "${YELLOW}Cloning repository...${NC}"
-		git clone "$REPO_URL" team67
-		# Change directory to the cloned repository
-		cd team67 || { echo -e "${RED}Failed to change directory to team67${NC}"; exit 1; }
-	else
-		echo -e "${RED}Please clone the repository and re-run the script.${NC}"
-		exit 1
-	fi
-fi
-
 # Change directory to the repository if not already in it
 if [ -d "team67" ]; then
 	echo -e "${YELLOW}Warning: The script is not running inside the 'team67' directory. Changing directory to 'team67'.${NC}"
