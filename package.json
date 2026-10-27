@@ -1,0 +1,24 @@
+{
+  "name": "team67",
+  "version": "1.0.0",
+  "description": "BucHunt is a browser-based scavenger hunt application based on the ScavengeRUS project. The system allows organizations and businesses to create scavenger hunt experiences where players travel to different locations and complete tasks.",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DemurestPie/team67.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/DemurestPie/team67/issues"
+  },
+  "homepage": "https://github.com/DemurestPie/team67#readme",
+  "devDependencies": {
+    "jsdom": "^30.1.3"
+  }
+}
