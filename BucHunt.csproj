@@ -8,6 +8,9 @@
 
   <ItemGroup>
     <Compile Remove="BucHunt.Tests/**/*.cs" />
+    <Content Remove="BucHunt.Tests/**" />
+    <EmbeddedResource Remove="BucHunt.Tests/**" />
+    <None Remove="BucHunt.Tests/**" />
   </ItemGroup>
 
 </Project>
