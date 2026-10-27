@@ -6,4 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="BucHunt.Tests/**/*.cs" />
+  </ItemGroup>
+
 </Project>
