@@ -6,14 +6,14 @@
 
 <div class="text-left" style="margin-top: -60px;">
     <header>
-        <img src="~/assets/Hunt-Tasks-logo.png"
-             alt="ScavengeRUS Logo"
-             class="logos"
-             style="margin-left: -100px;" />
+        <img src="~/assets/Hunt-Tasks-logo.png" alt="ScavengeRUS Logo" class="logos" style="margin-left: -100px;" />
     </header>
 
     <section>
         <h2>Available Tasks</h2>
+        <p>
+            Active Test Player: <strong>@ViewBag.ActivePhone</strong>
+        </p>
 
         @if (ViewBag.ErrorMessage != null)
         {
@@ -31,10 +31,7 @@
 
                         @if (!task.Completed)
                         {
-                            <form asp-controller="Player"
-                                  asp-action="CompleteTask"
-                                  method="post"
-                                  style="display: inline;">
+                            <form asp-controller="Player" asp-action="CompleteTask" method="post" style="display: inline;">
                                 <input type="hidden" name="id" value="@task.ID" />
                                 <button type="submit" class="btn btn-primary" data-task-id="@task.ID">
                                     Complete Task
