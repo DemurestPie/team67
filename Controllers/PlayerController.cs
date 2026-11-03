@@ -16,6 +16,35 @@ namespace team67.Controllers
         {
             environment = _environment;
         }
+        // Displays the phone number entry page.
+        [HttpGet]
+        public IActionResult EnterPhone()
+        {
+            return View();
+        }
+
+        // Checks the phone number submitted by the player.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult EnterPhone(string phoneNumber)
+        {
+            // Keep only the digits from the phone number.
+            string cleanedPhone = new string(
+                (phoneNumber ?? "").Where(char.IsDigit).ToArray()
+            );
+
+            // A test phone number must contain 10 digits.
+            if (cleanedPhone.Length != 10)
+            {
+                ViewBag.ErrorMessage = "Please enter a valid 10-digit phone number.";
+                return View();
+            }
+
+            // Player progress will be connected in Task 15.2.
+            ViewBag.SuccessMessage = "Phone number entered successfully!";
+
+            return View();
+        }
 
         // Loads the hunt tasks from tasks.json
         public IActionResult Index()
