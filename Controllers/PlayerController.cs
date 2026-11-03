@@ -35,6 +35,9 @@ namespace team67.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult EnterPhone(string phoneNumber)
         {
+            // Clear the previous player before checking a new phone number.
+            // An invalid entry must not keep access to another player's progress.
+            HttpContext.Session.Remove("PlayerPhone");
             string cleanedPhone = new string(
                 (phoneNumber ?? "").Where(char.IsDigit).ToArray()
             );
@@ -45,11 +48,12 @@ namespace team67.Controllers
                 return View();
             }
 
-            // Only use registered test players for now.
-            // Task 15.3 will improve unknown-number error handling.
+            // Reject phone numbers that do not belong to a registered test player.
             if (!playerProgress.ContainsKey(cleanedPhone))
             {
-                ViewBag.ErrorMessage = "Test player not found.";
+                ViewBag.ErrorMessage =
+                    "Phone number not found. Please check your number and try again.";
+
                 return View();
             }
 
