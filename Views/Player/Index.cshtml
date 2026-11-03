@@ -10,7 +10,15 @@
     </header>
 
     <section>
-        <h2>Available Tasks</h2>
+        <h2>Available Tasks</h2>>
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger" role="alert">
+                @TempData["ErrorMessage"]
+            </div>
+        }
+
         <p>
             Active Test Player: <strong>@ViewBag.ActivePhone</strong>
         </p>

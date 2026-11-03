@@ -68,7 +68,7 @@ namespace team67.Controllers
         {
             // Require a selected test player before displaying tasks.
             string? currentPhone = HttpContext.Session.GetString("PlayerPhone");
-           
+
             if (currentPhone == null || !playerProgress.ContainsKey(currentPhone))
             {
                 return RedirectToAction("EnterPhone");
@@ -137,22 +137,81 @@ namespace team67.Controllers
             return View(parsedTasks);
         }
 
-        // Marks a task completed for the current player only.
+
+        // Marks a task completed only if it belongs to the current hunt.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult CompleteTask(int id)
         {
+            // Get the phone number of the active player.
             string? phoneNumber = HttpContext.Session.GetString("PlayerPhone");
 
-            // Do not change progress when no test player is selected.
+            // Do not allow completion without a registered player.
             if (phoneNumber == null || !playerProgress.ContainsKey(phoneNumber))
             {
                 return RedirectToAction("EnterPhone");
             }
 
+            // Find the file containing the current hunt's tasks.
+            string filePath = Path.Combine(
+                environment.ContentRootPath,
+                "Data",
+                "tasks.json"
+            );
+
+            List<ParsedTasks> tasks;
+
+            try
+            {
+                // Read the task IDs that belong to this hunt.
+                string jsonData = System.IO.File.ReadAllText(filePath);
+
+                tasks = JsonSerializer.Deserialize<List<ParsedTasks>>(
+                    jsonData,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    }
+                ) ?? new List<ParsedTasks>();
+            }
+            catch (IOException)
+            {
+                TempData["ErrorMessage"] =
+                    "Unable to verify the hunt task. Please try again later.";
+
+                return RedirectToAction("Index");
+            }
+            catch (UnauthorizedAccessException)
+            {
+                TempData["ErrorMessage"] =
+                    "Unable to verify the hunt task. Please try again later.";
+
+                return RedirectToAction("Index");
+            }
+            catch (JsonException)
+            {
+                TempData["ErrorMessage"] =
+                    "Unable to verify the hunt task. Please try again later.";
+
+                return RedirectToAction("Index");
+            }
+
+            // Reject task IDs that do not belong to the current hunt.
+            bool taskExists = tasks.Any(task => task.ID == id);
+
+            if (!taskExists)
+            {
+                TempData["ErrorMessage"] =
+                    "Invalid task. This task does not belong to the current hunt.";
+
+                return RedirectToAction("Index");
+            }
+
+            // Only save completion after validating the task ID.
             playerProgress[phoneNumber].Add(id);
 
             return RedirectToAction("Index");
         }
+
     }
 }

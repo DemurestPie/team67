@@ -182,6 +182,61 @@ namespace BucHunt.Tests
             );
         }
 
+        [Fact]
+        public void CompleteTask_InvalidTaskId_DoesNotSaveProgress()
+        {
+            // Arrange: Create the controller and test player.
+            var environment = new TestEnvironment();
+            var controller = new PlayerController(environment);
+
+            var session = new Mock<ISession>();
+
+            session.Setup(s => s.TryGetValue(
+                    "PlayerPhone",
+                    out It.Ref<byte[]?>.IsAny))
+                .Returns((string key, out byte[]? value) =>
+                {
+                    value = System.Text.Encoding.UTF8.GetBytes("4235550123");
+                    return true;
+                });
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Session = session.Object;
+
+            controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
+
+            // TempData is needed to display an error after redirecting.
+            var tempData = new Microsoft.AspNetCore.Mvc.ViewFeatures.TempDataDictionary(
+                httpContext,
+                Mock.Of<Microsoft.AspNetCore.Mvc.ViewFeatures.ITempDataProvider>()
+            );
+
+            controller.TempData = tempData;
+
+            // Act: Attempt to complete a task that does not exist.
+            var result = controller.CompleteTask(9999);
+
+            // Assert: The request is rejected with a clear error.
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+
+            Assert.Equal("Index", redirect.ActionName);
+
+            Assert.Equal(
+                "Invalid task. This task does not belong to the current hunt.",
+                controller.TempData["ErrorMessage"]
+            );
+
+            // Verify that the invalid task is not shown as completed.
+            var indexResult = Assert.IsType<ViewResult>(controller.Index());
+            var tasks = Assert.IsAssignableFrom<List<ParsedTasks>>(indexResult.Model);
+
+            Assert.DoesNotContain(tasks, task => task.ID == 9999);
+        }
+
+
 
 
     }
