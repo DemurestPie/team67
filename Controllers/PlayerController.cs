@@ -68,13 +68,15 @@ namespace team67.Controllers
         {
             // Require a selected test player before displaying tasks.
             string? currentPhone = HttpContext.Session.GetString("PlayerPhone");
-            // Show which test player is currently active.
-            ViewBag.ActivePhone = currentPhone;
-
+           
             if (currentPhone == null || !playerProgress.ContainsKey(currentPhone))
             {
                 return RedirectToAction("EnterPhone");
             }
+
+            // Show which test player is currently active.
+            ViewBag.ActivePhone = currentPhone;
+
             string filePath = Path.Combine(
                 environment.ContentRootPath,
                 "Data",
