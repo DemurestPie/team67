@@ -10,16 +10,73 @@ namespace team67.Controllers
 
         // Keeps track of completed tasks while the app is running.
         // PBI 8 and 9 will handle permanent/browser-local storage later.
-        private static readonly HashSet<int> completedTaskIds = new HashSet<int>();
+        // Test players and their completed tasks.
+        // Each phone number has its own progress record.
+        private static readonly Dictionary<string, HashSet<int>> playerProgress =
+            new Dictionary<string, HashSet<int>>()
+            {
+        { "4235550123", new HashSet<int>() },
+        { "4235550456", new HashSet<int>() }
+            };
 
         public PlayerController(IWebHostEnvironment _environment)
         {
             environment = _environment;
         }
+        // Displays the phone number entry page.
+        [HttpGet]
+        public IActionResult EnterPhone()
+        {
+            return View();
+        }
+
+        // Connects a test phone number to its progress record.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult EnterPhone(string phoneNumber)
+        {
+            // Clear the previous player before checking a new phone number.
+            // An invalid entry must not keep access to another player's progress.
+            HttpContext.Session.Remove("PlayerPhone");
+            string cleanedPhone = new string(
+                (phoneNumber ?? "").Where(char.IsDigit).ToArray()
+            );
+
+            if (cleanedPhone.Length != 10)
+            {
+                ViewBag.ErrorMessage = "Please enter a valid 10-digit phone number.";
+                return View();
+            }
+
+            // Reject phone numbers that do not belong to a registered test player.
+            if (!playerProgress.ContainsKey(cleanedPhone))
+            {
+                ViewBag.ErrorMessage =
+                    "Phone number not found. Please check your number and try again.";
+
+                return View();
+            }
+
+            // Remember the selected player for this browser session.
+            HttpContext.Session.SetString("PlayerPhone", cleanedPhone);
+
+            return RedirectToAction("Index");
+        }
 
         // Loads the hunt tasks from tasks.json
         public IActionResult Index()
         {
+            // Require a selected test player before displaying tasks.
+            string? currentPhone = HttpContext.Session.GetString("PlayerPhone");
+           
+            if (currentPhone == null || !playerProgress.ContainsKey(currentPhone))
+            {
+                return RedirectToAction("EnterPhone");
+            }
+
+            // Show which test player is currently active.
+            ViewBag.ActivePhone = currentPhone;
+
             string filePath = Path.Combine(
                 environment.ContentRootPath,
                 "Data",
@@ -50,10 +107,15 @@ namespace team67.Controllers
                     );
                 }
 
-                // Apply the current completion state.
-                foreach (ParsedTasks task in parsedTasks)
+                // Load only the current player's completed tasks.
+                string? phoneNumber = HttpContext.Session.GetString("PlayerPhone");
+
+                if (phoneNumber != null && playerProgress.ContainsKey(phoneNumber))
                 {
-                    task.Completed = completedTaskIds.Contains(task.ID);
+                    foreach (ParsedTasks task in parsedTasks)
+                    {
+                        task.Completed = playerProgress[phoneNumber].Contains(task.ID);
+                    }
                 }
             }
             catch (IOException)
@@ -75,11 +137,20 @@ namespace team67.Controllers
             return View(parsedTasks);
         }
 
-        // Marks one selected task as completed.
+        // Marks a task completed for the current player only.
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult CompleteTask(int id)
         {
-            completedTaskIds.Add(id);
+            string? phoneNumber = HttpContext.Session.GetString("PlayerPhone");
+
+            // Do not change progress when no test player is selected.
+            if (phoneNumber == null || !playerProgress.ContainsKey(phoneNumber))
+            {
+                return RedirectToAction("EnterPhone");
+            }
+
+            playerProgress[phoneNumber].Add(id);
 
             return RedirectToAction("Index");
         }

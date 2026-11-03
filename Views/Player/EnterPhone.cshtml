@@ -1,0 +1,46 @@
+@{
+    ViewData["Title"] = "Player Entry";
+}
+
+<div class="container mt-4">
+    <h2>Player Entry</h2>
+
+    <p>Enter your phone number to begin.</p>
+
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @ViewBag.ErrorMessage
+        </div>
+    }
+
+    @if (ViewBag.SuccessMessage != null)
+    {
+        <div class="alert alert-success" role="status">
+            @ViewBag.SuccessMessage
+        </div>
+    }
+
+    <form asp-controller="Player"
+          asp-action="EnterPhone"
+          method="post">
+
+        <div class="mb-3">
+            <label for="phoneNumber" class="form-label">
+                Phone Number
+            </label>
+
+            <input type="tel"
+                   id="phoneNumber"
+                   name="phoneNumber"
+                   class="form-control"
+                   placeholder="Enter 10-digit phone number"
+                   autocomplete="tel"
+                   required />
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            Submit
+        </button>
+    </form>
+</div>
