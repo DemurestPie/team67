@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.FileProviders;
 using BucHunt.Models;
 using team67.Controllers;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
+using Moq;
 
 namespace BucHunt.Tests
 {
@@ -12,9 +15,30 @@ namespace BucHunt.Tests
         [Fact]
         public void Index_LoadsTasksFromJson()
         {
-            // Arrange
             var environment = new TestEnvironment();
             var controller = new PlayerController(environment);
+
+            // Create a fake session for our registered test player.
+            var session = new Mock<ISession>();
+
+            session.Setup(s => s.TryGetValue(
+                    "PlayerPhone",
+                    out It.Ref<byte[]?>.IsAny))
+                .Returns((string key, out byte[]? value) =>
+                {
+                    value = System.Text.Encoding.UTF8.GetBytes("4235550123");
+                    return true;
+                });
+
+            var httpContext = new DefaultHttpContext();
+
+            // Give the controller a fake session for testing.
+            httpContext.Session = session.Object;
+
+            controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
 
             // Act
             var result = controller.Index() as ViewResult;
