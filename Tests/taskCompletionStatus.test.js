@@ -1,74 +1,57 @@
-// the data to test the function. this is the peice of data used for this test
+const test = require("node:test");
+const assert = require("node:assert/strict");
 
 const mockStorage = {};
-global.localStorage = {
-    setItem: (key, val) => { mockStorage[key] = String(val); },
-    getItem: (key) => mockStorage[key] || null,
-    clear: () => { for (let key in mockStorage) delete mockStorage[key]; }
-};
 
+global.localStorage = {
+    setItem: (key, val) => {
+        mockStorage[key] = String(val);
+    },
+    getItem: (key) => mockStorage[key] ?? null,
+    clear: () => {
+        for (const key in mockStorage) {
+            delete mockStorage[key];
+        }
+    }
+};
 
 let tasksStates = {
     completedTaskList: []
 };
 
-
-// This is extracting the saved data from local storage using its Element ID and parsing it into a json file
-
-function savingTasks()
-{
+function savingTasks() {
     localStorage.setItem("SavedData", JSON.stringify(tasksStates));
 }
 
+function loadTasks() {
+    const data = localStorage.getItem("SavedData");
 
-function loadTasks()
-{
-    let data = localStorage.getItem("SavedData");
-
-
-    if(data)
-    {
-        tasksStates = JSON.parse(data);
-    }
-    else
-    {
-        tasksStates = {
-            completedTaskList: []
-        };
-    }
+    tasksStates = data
+        ? JSON.parse(data)
+        : { completedTaskList: [] };
 }
 
+test("Completed tasks are empty when no saved data exists", () => {
+    localStorage.clear();
+    tasksStates = { completedTaskList: [] };
 
-test("Testing to make sure that the saved completetion tasks states are empty in local storage", () =>
-    {
-        loadTasks();
+    loadTasks();
 
-        expect(tasksStates.completedTaskList).toEqual([]);
-        expect(tasksStates.completedTaskList.length).toBe(0);
-    }
+    assert.deepEqual(tasksStates.completedTaskList, []);
+    assert.equal(tasksStates.completedTaskList.length, 0);
+});
 
-)
+test("Completed tasks are restored after refreshing", () => {
+    localStorage.clear();
+    tasksStates = { completedTaskList: ["task-89"] };
 
-test("Testing to make sure that the saved completetion tasks states aere saved while refreshing in local storage", () =>
-    {
-          tasksStates.completedTaskList = [];
-          tasksStates.completedTaskList.push("task-89");
-          savingTasks();
+    savingTasks();
 
+    // Simulate losing the in-memory state during a refresh.
+    tasksStates = { completedTaskList: [] };
 
-          tasksStates = {completedTaskList: []};
+    loadTasks();
 
-
-          loadTasks();
-
-          expect(tasksStates.completedTaskList).toContain("task-89");
-          expect(tasksStates.completedTaskList.length).toBe(1);
-    }
-
-)
-
-
-
-
-
-
+    assert.ok(tasksStates.completedTaskList.includes("task-89"));
+    assert.equal(tasksStates.completedTaskList.length, 1);
+});
