@@ -8,21 +8,55 @@ namespace team67.Controllers
     {
         private readonly IWebHostEnvironment environment;
 
-        // Keeps track of completed tasks while the app is running.
-        // PBI 8 and 9 will handle permanent/browser-local storage later.
-        // Test players and their completed tasks.
-        // Each phone number has its own progress record.
-        private static readonly Dictionary<string, HashSet<int>> playerProgress =
-            new Dictionary<string, HashSet<int>>()
+        // Test players that are allowed to access the hunt.
+        private static readonly HashSet<string> registeredPlayers =
+            new HashSet<string>()
             {
-        { "4235550123", new HashSet<int>() },
-        { "4235550456", new HashSet<int>() }
+                "4235550123",
+                "4235550456"
             };
 
         public PlayerController(IWebHostEnvironment _environment)
         {
             environment = _environment;
         }
+
+        // Loads saved player progress from the server.
+        private Dictionary<string, HashSet<int>> LoadPlayerProgress()
+        {
+            string filePath = Path.Combine(
+                environment.ContentRootPath,
+                "Data",
+                "playerProgress.json"
+            );
+
+            string jsonData = System.IO.File.ReadAllText(filePath);
+
+            return JsonSerializer.Deserialize<Dictionary<string, HashSet<int>>>(jsonData)
+                ?? new Dictionary<string, HashSet<int>>();
+        }
+
+        // Saves player progress to the server.
+        private void SavePlayerProgress(
+            Dictionary<string, HashSet<int>> progress)
+        {
+            string filePath = Path.Combine(
+                environment.ContentRootPath,
+                "Data",
+                "playerProgress.json"
+            );
+
+            string jsonData = JsonSerializer.Serialize(
+                progress,
+                new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                }
+            );
+
+            System.IO.File.WriteAllText(filePath, jsonData);
+        }
+
         // Displays the phone number entry page.
         [HttpGet]
         public IActionResult EnterPhone()
@@ -36,20 +70,22 @@ namespace team67.Controllers
         public IActionResult EnterPhone(string phoneNumber)
         {
             // Clear the previous player before checking a new phone number.
-            // An invalid entry must not keep access to another player's progress.
             HttpContext.Session.Remove("PlayerPhone");
+
             string cleanedPhone = new string(
                 (phoneNumber ?? "").Where(char.IsDigit).ToArray()
             );
 
             if (cleanedPhone.Length != 10)
             {
-                ViewBag.ErrorMessage = "Please enter a valid 10-digit phone number.";
+                ViewBag.ErrorMessage =
+                    "Please enter a valid 10-digit phone number.";
+
                 return View();
             }
 
-            // Reject phone numbers that do not belong to a registered test player.
-            if (!playerProgress.ContainsKey(cleanedPhone))
+            // Reject phone numbers that are not registered players.
+            if (!registeredPlayers.Contains(cleanedPhone))
             {
                 ViewBag.ErrorMessage =
                     "Phone number not found. Please check your number and try again.";
@@ -57,24 +93,27 @@ namespace team67.Controllers
                 return View();
             }
 
-            // Remember the selected player for this browser session.
-            HttpContext.Session.SetString("PlayerPhone", cleanedPhone);
+            // Remember the active player for this browser session.
+            HttpContext.Session.SetString(
+                "PlayerPhone",
+                cleanedPhone
+            );
 
             return RedirectToAction("Index");
         }
 
-        // Loads the hunt tasks from tasks.json
+        // Loads the hunt tasks and the current player's saved progress.
         public IActionResult Index()
         {
-            // Require a selected test player before displaying tasks.
-            string? currentPhone = HttpContext.Session.GetString("PlayerPhone");
-           
-            if (currentPhone == null || !playerProgress.ContainsKey(currentPhone))
+            string? currentPhone =
+                HttpContext.Session.GetString("PlayerPhone");
+
+            if (currentPhone == null ||
+                !registeredPlayers.Contains(currentPhone))
             {
                 return RedirectToAction("EnterPhone");
             }
 
-            // Show which test player is currently active.
             ViewBag.ActivePhone = currentPhone;
 
             string filePath = Path.Combine(
@@ -83,11 +122,13 @@ namespace team67.Controllers
                 "tasks.json"
             );
 
-            List<ParsedTasks> parsedTasks = new List<ParsedTasks>();
+            List<ParsedTasks> parsedTasks =
+                new List<ParsedTasks>();
 
             try
             {
-                string jsonData = System.IO.File.ReadAllText(filePath);
+                string jsonData =
+                    System.IO.File.ReadAllText(filePath);
 
                 var options = new JsonSerializerOptions
                 {
@@ -107,15 +148,20 @@ namespace team67.Controllers
                     );
                 }
 
-                // Load only the current player's completed tasks.
-                string? phoneNumber = HttpContext.Session.GetString("PlayerPhone");
+                // Load the current player's progress from server storage.
+                Dictionary<string, HashSet<int>> progress =
+                    LoadPlayerProgress();
 
-                if (phoneNumber != null && playerProgress.ContainsKey(phoneNumber))
+                if (!progress.ContainsKey(currentPhone))
                 {
-                    foreach (ParsedTasks task in parsedTasks)
-                    {
-                        task.Completed = playerProgress[phoneNumber].Contains(task.ID);
-                    }
+                    progress[currentPhone] =
+                        new HashSet<int>();
+                }
+
+                foreach (ParsedTasks task in parsedTasks)
+                {
+                    task.Completed =
+                        progress[currentPhone].Contains(task.ID);
                 }
             }
             catch (IOException)
@@ -137,20 +183,91 @@ namespace team67.Controllers
             return View(parsedTasks);
         }
 
-        // Marks a task completed for the current player only.
+        // Marks a valid task completed and saves it under the active phone number.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult CompleteTask(int id)
         {
-            string? phoneNumber = HttpContext.Session.GetString("PlayerPhone");
+            string? phoneNumber =
+                HttpContext.Session.GetString("PlayerPhone");
 
-            // Do not change progress when no test player is selected.
-            if (phoneNumber == null || !playerProgress.ContainsKey(phoneNumber))
+            if (phoneNumber == null ||
+                !registeredPlayers.Contains(phoneNumber))
             {
                 return RedirectToAction("EnterPhone");
             }
 
-            playerProgress[phoneNumber].Add(id);
+            // Load the current hunt's tasks so the ID can be validated.
+            string filePath = Path.Combine(
+                environment.ContentRootPath,
+                "Data",
+                "tasks.json"
+            );
+
+            List<ParsedTasks> tasks;
+
+            try
+            {
+                string jsonData =
+                    System.IO.File.ReadAllText(filePath);
+
+                tasks =
+                    JsonSerializer.Deserialize<List<ParsedTasks>>(
+                        jsonData,
+                        new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        }
+                    ) ?? new List<ParsedTasks>();
+            }
+            catch (IOException)
+            {
+                TempData["ErrorMessage"] =
+                    "Unable to validate the selected task.";
+
+                return RedirectToAction("Index");
+            }
+            catch (UnauthorizedAccessException)
+            {
+                TempData["ErrorMessage"] =
+                    "Unable to validate the selected task.";
+
+                return RedirectToAction("Index");
+            }
+            catch (JsonException)
+            {
+                TempData["ErrorMessage"] =
+                    "Unable to validate the selected task.";
+
+                return RedirectToAction("Index");
+            }
+
+            // PBI 16.4: reject IDs that do not belong to the current hunt.
+            bool validTask =
+                tasks.Any(task => task.ID == id);
+
+            if (!validTask)
+            {
+                TempData["ErrorMessage"] =
+                    "Invalid task. This task does not belong to the current hunt.";
+
+                return RedirectToAction("Index");
+            }
+
+            // PBI 16.1: load progress for the active player.
+            Dictionary<string, HashSet<int>> progress =
+                LoadPlayerProgress();
+
+            if (!progress.ContainsKey(phoneNumber))
+            {
+                progress[phoneNumber] =
+                    new HashSet<int>();
+            }
+
+            // Save the valid completed task under that player's phone number.
+            progress[phoneNumber].Add(id);
+
+            SavePlayerProgress(progress);
 
             return RedirectToAction("Index");
         }
