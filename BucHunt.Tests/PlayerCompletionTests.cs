@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using team67.Controllers;
 using BucHunt.Models;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.Mvc.ViewFeatures.Infrastructure;
 
 namespace BucHunt.Tests
 {
@@ -35,9 +37,18 @@ namespace BucHunt.Tests
             {
                 HttpContext = httpContext
             };
+            // Unit tests do not automatically configure MVC TempData.
+            // Provide a temporary dictionary for task-specific feedback.
+            controller.TempData = new TempDataDictionary(
+                httpContext,
+                Mock.Of<ITempDataProvider>()
+            );
 
             // Act: Complete Task 1 for Player A.
             controller.SubmitCode(1, "BUC-001");
+
+            // Task 23.3: Feedback must be associated with Task 1.
+            Assert.Equal(1, controller.TempData["FeedbackTaskId"]);
 
             ViewResult result = (ViewResult)controller.Index();
 
@@ -80,6 +91,12 @@ namespace BucHunt.Tests
             {
                 HttpContext = httpContext
             };
+            // Provide TempData because this controller is created manually
+            // instead of being initialized by ASP.NET Core MVC.
+            controller.TempData = new TempDataDictionary(
+                httpContext,
+                Mock.Of<ITempDataProvider>()
+            );
 
             // Act: Player A completes Task 8.
             controller.SubmitCode(8, "BUC-008");
@@ -129,6 +146,12 @@ namespace BucHunt.Tests
             {
                 HttpContext = httpContext
             };
+            // Provide TempData because this controller is created manually
+            // instead of being initialized by ASP.NET Core MVC.
+            controller.TempData = new TempDataDictionary(
+                httpContext,
+                Mock.Of<ITempDataProvider>()
+            );
 
             // Act 1: Player A completes Task 3.
             controller.SubmitCode(3, "BUC-003");
@@ -376,8 +399,17 @@ namespace BucHunt.Tests
                 HttpContext = httpContext
             };
 
+            // Configure TempData for this unit test because MVC does not
+            // initialize it automatically when we create the controller.
+            controller.TempData = new TempDataDictionary(
+                httpContext,
+                Mock.Of<ITempDataProvider>()
+            );
+
             // Submit the correct code for Task 1.
             var result = controller.SubmitCode(1, "BUC-001");
+            // Task 23.3: The feedback belongs to the submitted task.
+            Assert.Equal(1, controller.TempData["FeedbackTaskId"]);
 
             var redirect = Assert.IsType<RedirectToActionResult>(result);
             Assert.Equal("Index", redirect.ActionName);
@@ -472,6 +504,12 @@ namespace BucHunt.Tests
             {
                 HttpContext = httpContext
             };
+            // Configure TempData for this unit test because MVC does not
+            // initialize it automatically when we create the controller.
+            controller.TempData = new TempDataDictionary(
+                httpContext,
+                Mock.Of<ITempDataProvider>()
+            );
 
             // Player A completes Task 1.
             controller.SubmitCode(1, "BUC-001");

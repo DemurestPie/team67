@@ -1,21 +1,41 @@
+
 @using BucHunt.Models
+@model List<ParsedTasks>
 
 @{
     ViewData["Title"] = "Hunt Tasks";
+
+    // Read feedback once so it can be matched to the submitted task.
+    int? feedbackTaskId = TempData["FeedbackTaskId"] is int id
+        ? id
+        : null;
+
+    string? errorMessage = TempData["ErrorMessage"] as string;
+    string? successMessage = TempData["SuccessMessage"] as string;
+
+    // Determine whether the submitted task exists in the displayed list.
+    // Errors for nonexistent tasks are shown above the list instead.
+    bool feedbackTaskExists =
+        feedbackTaskId.HasValue &&
+        Model.Any(task => task.ID == feedbackTaskId.Value);
 }
 
 <div class="text-left" style="margin-top: -60px;">
     <header>
-        <img src="~/assets/Hunt-Tasks-logo.png" alt="ScavengeRUS Logo" class="logos" style="margin-left: -100px;" />
+        <img src="~/assets/Hunt-Tasks-logo.png"
+             alt="ScavengeRUS Logo"
+             class="logos"
+             style="margin-left: -100px;" />
     </header>
 
     <section>
-        <h2>Available Tasks</h2>>
+        <h2>Available Tasks</h2>
 
-        @if (TempData["ErrorMessage"] != null)
+        @* Show errors here only when no displayed task matches the feedback. *@
+        @if (!feedbackTaskExists && !string.IsNullOrEmpty(errorMessage))
         {
             <div class="alert alert-danger" role="alert">
-                @TempData["ErrorMessage"]
+                @errorMessage
             </div>
         }
 
@@ -34,14 +54,41 @@
             <ul id="taskList">
                 @foreach (ParsedTasks task in Model)
                 {
-                    <li class="task-row @(task.Completed ? "task-completed" : "")" data-task-id="@task.ID">
+                    <li class="task-row @(task.Completed ? "task-completed" : "")"
+                        data-task-id="@task.ID">
+
                         Task @task.ID: @task.Label
+
+                        @* Task 23.3: Show feedback only for the submitted task. *@
+                        @if (feedbackTaskId == task.ID)
+                        {
+                            @if (!string.IsNullOrEmpty(errorMessage))
+                            {
+                                <div class="alert alert-danger" role="alert">
+                                    @errorMessage
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrEmpty(successMessage))
+                            {
+                                <div class="alert alert-success" role="status">
+                                    @successMessage
+                                </div>
+                            }
+                        }
 
                         @if (!task.Completed)
                         {
-                            <form asp-controller="Player" asp-action="CompleteTask" method="post" style="display: inline;">
+                            <form asp-controller="Player"
+                                  asp-action="CompleteTask"
+                                  method="post"
+                                  style="display: inline;">
+
                                 <input type="hidden" name="id" value="@task.ID" />
-                                <button type="submit" class="btn btn-primary" data-task-id="@task.ID">
+
+                                <button type="submit"
+                                        class="btn btn-primary"
+                                        data-task-id="@task.ID">
                                     Complete Task
                                 </button>
                             </form>

@@ -254,6 +254,10 @@ namespace team67.Controllers
                 return RedirectToAction("EnterPhone");
             }
 
+            // Task 23.3: Associate validation feedback with the submitted task.
+            // The view uses this ID to show feedback beside the correct task.
+            TempData["FeedbackTaskId"] = taskId;
+
             bool validCode;
 
             try
