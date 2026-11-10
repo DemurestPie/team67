@@ -596,6 +596,67 @@ namespace BucHunt.Tests
         }
 
 
+        // Task 23.4: An invalid code must not change existing completion status.
+        [Fact]
+        public void SubmitCode_InvalidCode_PreservesPreviouslyCompletedTask()
+        {
+            using var environment = new IsolatedTestEnvironment();
+            var controller = new PlayerController(environment);
+
+            // Simulate a registered player.
+            var session = new Mock<ISession>();
+
+            session.Setup(s => s.TryGetValue(
+                    "PlayerPhone",
+                    out It.Ref<byte[]?>.IsAny))
+                .Returns((string key, out byte[]? value) =>
+                {
+                    value = System.Text.Encoding.UTF8.GetBytes("4235550123");
+                    return true;
+                });
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Session = session.Object;
+
+            controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
+
+            // Manually created controllers need TempData configured.
+            controller.TempData = new TempDataDictionary(
+                httpContext,
+                Mock.Of<ITempDataProvider>()
+            );
+
+            // First, successfully complete Task 1.
+            controller.SubmitCode(1, "BUC-001");
+
+            // Then submit an incorrect code for the same task.
+            var result = controller.SubmitCode(1, "WRONG-CODE");
+
+            // The invalid submission should redirect without changing progress.
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("Index", redirect.ActionName);
+
+            // Reload the tasks to check their current completion status.
+            var indexResult = Assert.IsType<ViewResult>(controller.Index());
+            var tasks = Assert.IsAssignableFrom<List<ParsedTasks>>(
+                indexResult.Model
+            );
+
+            // Task 1 must remain completed.
+            Assert.True(tasks.Single(task => task.ID == 1).Completed);
+
+            // All unrelated tasks must remain incomplete.
+            Assert.All(
+                tasks.Where(task => task.ID != 1),
+                task => Assert.False(task.Completed)
+            );
+        }
+
+
+
 
         // Creates separate files so tests do not change real player progress.
         public class IsolatedTestEnvironment : TestEnvironment, IDisposable
