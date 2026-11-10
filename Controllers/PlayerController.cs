@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using BucHunt.Models;
+using System.Text.RegularExpressions;
+
 
 namespace team67.Controllers
 {
@@ -253,6 +255,23 @@ namespace team67.Controllers
 
                 return RedirectToAction("Index");
             }
+
+
+            //Adding the code to check if the entered code is valid for the task
+            string enteredCode = tasks.First(task => task.ID == id).Code;
+
+            enteredCode = enteredCode.ToUpper().Trim();
+    
+            string codePattern = @"^BUC-\d{3}$";
+
+            if (string.IsNullOrWhiteSpace(enteredCode) || !Regex.IsMatch(enteredCode, codePattern))
+            {
+                TempData["ErrorMessage"] =
+                    "Invalid code format. Please enter a valid code in the format BUC-XXX.";
+
+                return RedirectToAction("Index");
+            }
+
 
             // PBI 16.1: load progress for the active player.
             Dictionary<string, HashSet<int>> progress =
