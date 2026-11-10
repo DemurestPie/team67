@@ -21,6 +21,98 @@ namespace team67.Controllers
             environment = _environment;
         }
 
+        // Loads tasks.json and all additional tasks.*.json files.
+        private List<ParsedTasks> LoadHuntTasks()
+        {
+            string dataDirectory = Path.Combine(
+                environment.ContentRootPath,
+                "Data"
+            );
+
+            string[] taskFiles = Directory
+                .EnumerateFiles(dataDirectory, "*.json")
+                .Where(file =>
+                {
+                    string name = Path.GetFileName(file);
+
+                    return name.Equals(
+                        "tasks.json",
+                        StringComparison.OrdinalIgnoreCase
+                    ) || name.StartsWith(
+                        "tasks.",
+                        StringComparison.OrdinalIgnoreCase
+                    );
+                })
+                .OrderBy(
+                    file => file,
+                    StringComparer.OrdinalIgnoreCase
+                )
+                .ToArray();
+
+            if (taskFiles.Length == 0)
+            {
+                throw new IOException("No task files were found.");
+            }
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            var tasks = new List<ParsedTasks>();
+            var taskIds = new HashSet<int>();
+
+            foreach (string filePath in taskFiles)
+            {
+                string jsonData =
+                    System.IO.File.ReadAllText(filePath);
+
+                var fileTasks =
+                    JsonSerializer.Deserialize<List<ParsedTasks?>>(
+                        jsonData,
+                        options
+                    );
+
+                if (fileTasks == null)
+                {
+                    throw new JsonException(
+                        $"Invalid task list in {Path.GetFileName(filePath)}."
+                    );
+                }
+
+                foreach (var task in fileTasks)
+                {
+                    if (task == null ||
+                        task.ID <= 0 ||
+                        string.IsNullOrWhiteSpace(task.Label))
+                    {
+                        throw new JsonException(
+                            $"Invalid task in {Path.GetFileName(filePath)}."
+                        );
+                    }
+
+                    // Saved progress requires unique IDs across all files.
+                    if (!taskIds.Add(task.ID))
+                    {
+                        throw new JsonException(
+                            $"Duplicate task ID {task.ID}."
+                        );
+                    }
+
+                    tasks.Add(task);
+                }
+            }
+
+            if (tasks.Count == 0)
+            {
+                throw new JsonException(
+                    "Task files contain no tasks."
+                );
+            }
+
+            return tasks.OrderBy(task => task.ID).ToList();
+        }
+
         // Loads saved player progress from the server.
         private Dictionary<string, HashSet<int>> LoadPlayerProgress()
         {
@@ -32,8 +124,10 @@ namespace team67.Controllers
 
             string jsonData = System.IO.File.ReadAllText(filePath);
 
-            return JsonSerializer.Deserialize<Dictionary<string, HashSet<int>>>(jsonData)
-                ?? new Dictionary<string, HashSet<int>>();
+            return JsonSerializer
+                .Deserialize<Dictionary<string, HashSet<int>>>(
+                    jsonData
+                ) ?? new Dictionary<string, HashSet<int>>();
         }
 
         // Saves player progress to the server.
@@ -102,7 +196,7 @@ namespace team67.Controllers
             return RedirectToAction("Index");
         }
 
-        // Loads the hunt tasks and the current player's saved progress.
+        // Loads all hunt task files and the current player's progress.
         public IActionResult Index()
         {
             string? currentPhone =
@@ -116,37 +210,12 @@ namespace team67.Controllers
 
             ViewBag.ActivePhone = currentPhone;
 
-            string filePath = Path.Combine(
-                environment.ContentRootPath,
-                "Data",
-                "tasks.json"
-            );
-
             List<ParsedTasks> parsedTasks =
                 new List<ParsedTasks>();
 
             try
             {
-                string jsonData =
-                    System.IO.File.ReadAllText(filePath);
-
-                var options = new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                };
-
-                parsedTasks =
-                    JsonSerializer.Deserialize<List<ParsedTasks>>(
-                        jsonData,
-                        options
-                    ) ?? new List<ParsedTasks>();
-
-                if (parsedTasks.Count == 0)
-                {
-                    throw new JsonException(
-                        "Task file contains no task list."
-                    );
-                }
+                parsedTasks = LoadHuntTasks();
 
                 // Load the current player's progress from server storage.
                 Dictionary<string, HashSet<int>> progress =
@@ -154,8 +223,7 @@ namespace team67.Controllers
 
                 if (!progress.ContainsKey(currentPhone))
                 {
-                    progress[currentPhone] =
-                        new HashSet<int>();
+                    progress[currentPhone] = new HashSet<int>();
                 }
 
                 foreach (ParsedTasks task in parsedTasks)
@@ -183,7 +251,7 @@ namespace team67.Controllers
             return View(parsedTasks);
         }
 
-        // Marks a valid task completed and saves it under the active phone number.
+        // Marks a valid task completed for the active player.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult CompleteTask(int id)
@@ -197,28 +265,12 @@ namespace team67.Controllers
                 return RedirectToAction("EnterPhone");
             }
 
-            // Load the current hunt's tasks so the ID can be validated.
-            string filePath = Path.Combine(
-                environment.ContentRootPath,
-                "Data",
-                "tasks.json"
-            );
-
+            // Validate the task ID against every task file.
             List<ParsedTasks> tasks;
 
             try
             {
-                string jsonData =
-                    System.IO.File.ReadAllText(filePath);
-
-                tasks =
-                    JsonSerializer.Deserialize<List<ParsedTasks>>(
-                        jsonData,
-                        new JsonSerializerOptions
-                        {
-                            PropertyNameCaseInsensitive = true
-                        }
-                    ) ?? new List<ParsedTasks>();
+                tasks = LoadHuntTasks();
             }
             catch (IOException)
             {
@@ -260,8 +312,7 @@ namespace team67.Controllers
 
             if (!progress.ContainsKey(phoneNumber))
             {
-                progress[phoneNumber] =
-                    new HashSet<int>();
+                progress[phoneNumber] = new HashSet<int>();
             }
 
             // Save the valid completed task under that player's phone number.
