@@ -34,17 +34,33 @@
             <ul id="taskList">
                 @foreach (ParsedTasks task in Model)
                 {
-                    <li class="task-row @(task.Completed ? "task-completed" : "")" data-task-id="@task.ID">
+                    <li class="task-row mb-3 @(task.Completed ? "task-completed" : "")" data-task-id="@task.ID">
                         Task @task.ID: @task.Label
 
                         @if (!task.Completed)
                         {
-                            <form asp-controller="Player" asp-action="CompleteTask" method="post" style="display: inline;">
-                                <input type="hidden" name="id" value="@task.ID" />
-                                <button type="submit" class="btn btn-primary" data-task-id="@task.ID">
-                                    Complete Task
+                            
+                
+                            <button type="button" id="btn-@task.ID" class="btn btn-primary" onclick="completeTask(@task.ID)">
+                                Complete Task
+                            </button>
+
+                            <form id="completeTaskForm-@task.ID" asp-controller="Player" asp-action="CompleteTask" method="post" style="display: none;">
+                                <input type="hidden" name="taskId" value="@task.ID" />
+
+                                <input type="text" name="enteredCode" class="form-control" placeholder="BUC-001" required style="width: 85px; height: 34px; border-radius: 6px; font-size: 16px; text-transform: uppercase; font-weight: bold; padding: 4px 8px;" />
+
+
+                                <button type="submit" class="btn btn-success" style="height: 42px; font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 16px; padding: 6px 16px;">
+                                    Submit
+                                </button>
+        
+                                 <!-- Large Cancel Button -->
+                                <button type="button" class="btn btn-secondary" onclick="cancelTask(@task.ID)" style="height: 42px; font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 16px; padding: 6px 16px;">
+                                    ✕
                                 </button>
                             </form>
+                            
                         }
                         else
                         {
@@ -58,6 +74,7 @@
 </div>
 
 <script src="~/js/taskSorting.js"></script>
+<script src="~/js/completedTaskCodeForm.js"></script>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
