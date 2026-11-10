@@ -237,93 +237,108 @@ namespace team67.Controllers
         }
 
 
-        // Marks a valid task completed and saves it under the active phone number.
+        // Task 22.2: Complete the selected task only when
+        // the player submits its correct completion code.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult CompleteTask(int id)
+        public IActionResult SubmitCode(int taskId, string? code)
         {
+            // Get the current player from the session.
             string? phoneNumber =
                 HttpContext.Session.GetString("PlayerPhone");
 
+            // Only registered players can submit completion codes.
             if (phoneNumber == null ||
                 !registeredPlayers.Contains(phoneNumber))
             {
                 return RedirectToAction("EnterPhone");
             }
 
-            // Load the current hunt's tasks so the ID can be validated.
-            string filePath = Path.Combine(
-                environment.ContentRootPath,
-                "Data",
-                "tasks.json"
-            );
-
-            List<ParsedTasks> tasks;
+            bool validCode;
 
             try
             {
-                string jsonData =
-                    System.IO.File.ReadAllText(filePath);
-
-                tasks =
-                    JsonSerializer.Deserialize<List<ParsedTasks>>(
-                        jsonData,
-                        new JsonSerializerOptions
-                        {
-                            PropertyNameCaseInsensitive = true
-                        }
-                    ) ?? new List<ParsedTasks>();
+                // Task 22.1 checks the submitted code
+                // against the selected task's configured code.
+                validCode = IsValidCompletionCode(taskId, code);
             }
             catch (IOException)
             {
                 TempData["ErrorMessage"] =
-                    "Unable to validate the selected task.";
+                    "Unable to validate the submitted code.";
 
                 return RedirectToAction("Index");
             }
             catch (UnauthorizedAccessException)
             {
                 TempData["ErrorMessage"] =
-                    "Unable to validate the selected task.";
+                    "Unable to validate the submitted code.";
 
                 return RedirectToAction("Index");
             }
             catch (JsonException)
             {
                 TempData["ErrorMessage"] =
-                    "Unable to validate the selected task.";
+                    "Unable to validate the submitted code.";
 
                 return RedirectToAction("Index");
             }
 
-            // PBI 16.4: reject IDs that do not belong to the current hunt.
-            bool validTask =
-                tasks.Any(task => task.ID == id);
-
-            if (!validTask)
+            // An incorrect code must not change saved progress.
+            if (!validCode)
             {
                 TempData["ErrorMessage"] =
-                    "Invalid task. This task does not belong to the current hunt.";
+                    "Incorrect completion code.";
 
                 return RedirectToAction("Index");
             }
 
-            // PBI 16.1: load progress for the active player.
+            // Load the saved progress for all players.
             Dictionary<string, HashSet<int>> progress =
                 LoadPlayerProgress();
 
+            // Create a progress entry if this player has none.
             if (!progress.ContainsKey(phoneNumber))
             {
-                progress[phoneNumber] =
-                    new HashSet<int>();
+                progress[phoneNumber] = new HashSet<int>();
             }
 
-            // Save the valid completed task under that player's phone number.
-            progress[phoneNumber].Add(id);
+            // Mark only the selected task as completed
+            // for the current player.
+            progress[phoneNumber].Add(taskId);
 
+            // Save the updated progress to the server.
             SavePlayerProgress(progress);
 
             return RedirectToAction("Index");
         }
+
+
+
+
+        // Legacy endpoint: Task completion now requires a valid code.
+        // This method no longer changes player progress.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult CompleteTask(int id)
+        {
+            // Identify the player using the current session.
+            string? phoneNumber =
+                HttpContext.Session.GetString("PlayerPhone");
+
+            // Redirect players who are not registered.
+            if (phoneNumber == null ||
+                !registeredPlayers.Contains(phoneNumber))
+            {
+                return RedirectToAction("EnterPhone");
+            }
+
+            // Prevent completing a task without code validation.
+            TempData["ErrorMessage"] =
+                "Please enter a completion code to complete this task.";
+
+            return RedirectToAction("Index");
+        }
+
     }
 }
