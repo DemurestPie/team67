@@ -1,34 +1,43 @@
+
 [
   {
     "id": 1,
-    "label": "Find the Buccaneer Statue"
+    "label": "Find the Buccaneer Statue",
+    "completionCode": "BUC-001"
   },
   {
     "id": 2,
-    "label": "Visit the Sherrod Library"
+    "label": "Visit the Sherrod Library",
+    "completionCode": "BUC-002"
   },
   {
     "id": 3,
-    "label": "Locate the Culp Student Center"
+    "label": "Locate the Culp Student Center",
+    "completionCode": "BUC-003"
   },
   {
     "id": 4,
-    "label": "Find the Mini-Dome"
+    "label": "Find the Mini-Dome",
+    "completionCode": "BUC-004"
   },
   {
     "id": 5,
-    "label": "Visit the Campus Center Building"
+    "label": "Visit the Campus Center Building",
+    "completionCode": "BUC-005"
   },
   {
     "id": 6,
-    "label": "Find a Piece of ETSU Artwork"
+    "label": "Find a Piece of ETSU Artwork",
+    "completionCode": "BUC-006"
   },
   {
     "id": 7,
-    "label": "Take a Photo at an ETSU Landmark"
+    "label": "Take a Photo at an ETSU Landmark",
+    "completionCode": "BUC-007"
   },
   {
     "id": 8,
-    "label": "Locate a Designated Scavenger Hunt Checkpoint"
+    "label": "Locate a Designated Scavenger Hunt Checkpoint",
+    "completionCode": "BUC-008"
   }
 ]

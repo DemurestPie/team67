@@ -183,6 +183,60 @@ namespace team67.Controllers
             return View(parsedTasks);
         }
 
+
+        // Task 22.1: Check whether the submitted code matches
+        // the configured completion code for the selected task.
+        private bool IsValidCompletionCode(int taskId, string? submittedCode)
+        {
+            // Reject an empty or missing code.
+            if (string.IsNullOrWhiteSpace(submittedCode))
+            {
+                return false;
+            }
+
+            // Find the file containing the hunt tasks.
+            string filePath = Path.Combine(
+                environment.ContentRootPath,
+                "Data",
+                "tasks.json"
+            );
+
+            // Read the tasks and their configured completion codes.
+            string jsonData = System.IO.File.ReadAllText(filePath);
+
+            List<ParsedTasks> tasks =
+                JsonSerializer.Deserialize<List<ParsedTasks>>(
+                    jsonData,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    }
+                ) ?? new List<ParsedTasks>();
+
+            // Find the task that matches the submitted task ID.
+            ParsedTasks? selectedTask =
+                tasks.FirstOrDefault(task => task.ID == taskId);
+
+            // Reject task IDs that do not exist.
+            if (selectedTask == null)
+            {
+                return false;
+            }
+
+            // Reject tasks that have no configured completion code.
+            if (string.IsNullOrWhiteSpace(selectedTask.CompletionCode))
+            {
+                return false;
+            }
+
+            return TaskCodeValidator.IsValid(
+            tasks,
+            taskId,
+            submittedCode
+            );
+        }
+
+
         // Marks a valid task completed and saves it under the active phone number.
         [HttpPost]
         [ValidateAntiForgeryToken]
