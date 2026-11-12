@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using team67.Controllers;
 using BucHunt.Models;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.Mvc.ViewFeatures.Infrastructure;
 
 namespace BucHunt.Tests
 {
@@ -35,9 +37,18 @@ namespace BucHunt.Tests
             {
                 HttpContext = httpContext
             };
+            // Unit tests do not automatically configure MVC TempData.
+            // Provide a temporary dictionary for task-specific feedback.
+            controller.TempData = new TempDataDictionary(
+                httpContext,
+                Mock.Of<ITempDataProvider>()
+            );
 
             // Act: Complete Task 1 for Player A.
-            controller.CompleteTask(1);
+            controller.SubmitCode(1, "BUC-001");
+
+            // Task 23.3: Feedback must be associated with Task 1.
+            Assert.Equal(1, controller.TempData["FeedbackTaskId"]);
 
             ViewResult result = (ViewResult)controller.Index();
 
@@ -80,9 +91,15 @@ namespace BucHunt.Tests
             {
                 HttpContext = httpContext
             };
+            // Provide TempData because this controller is created manually
+            // instead of being initialized by ASP.NET Core MVC.
+            controller.TempData = new TempDataDictionary(
+                httpContext,
+                Mock.Of<ITempDataProvider>()
+            );
 
             // Act: Player A completes Task 8.
-            controller.CompleteTask(8);
+            controller.SubmitCode(8, "BUC-008");
 
             // Switch to Player B.
             activePhone = "4235550456";
@@ -129,9 +146,16 @@ namespace BucHunt.Tests
             {
                 HttpContext = httpContext
             };
+            // Provide TempData because this controller is created manually
+            // instead of being initialized by ASP.NET Core MVC.
+            controller.TempData = new TempDataDictionary(
+                httpContext,
+                Mock.Of<ITempDataProvider>()
+            );
 
             // Act 1: Player A completes Task 3.
-            controller.CompleteTask(3);
+            controller.SubmitCode(3, "BUC-003");
+
 
             // Switch to Player B and check their progress.
             activePhone = "4235550456";
@@ -144,7 +168,7 @@ namespace BucHunt.Tests
             Assert.False(playerBTasks.Single(task => task.ID == 3).Completed);
 
             // Act 2: Player B completes Task 4.
-            controller.CompleteTask(4);
+            controller.SubmitCode(4, "BUC-004");
 
             // Switch back to Player A.
             activePhone = "4235550123";
@@ -318,8 +342,8 @@ namespace BucHunt.Tests
             Assert.Equal("Index", redirect.ActionName);
 
             Assert.Equal(
-                "Invalid task. This task does not belong to the current hunt.",
-                controller.TempData["ErrorMessage"]
+            "Please enter a completion code to complete this task.",
+            controller.TempData["ErrorMessage"]
             );
 
             // Verify that the invalid task is not shown as completed.
@@ -346,6 +370,293 @@ namespace BucHunt.Tests
             // Verify that the invalid task ID was not saved for Player A.
             Assert.DoesNotContain(9999, savedProgress["4235550123"]);
         }
+
+
+        // Task 22.2: A correct code completes only the selected task.
+        [Fact]
+        public void SubmitCode_ValidCode_CompletesOnlySelectedTask()
+        {
+            using var environment = new IsolatedTestEnvironment();
+            var controller = new PlayerController(environment);
+
+            // Simulate Player A being logged in.
+            var session = new Mock<ISession>();
+
+            session.Setup(s => s.TryGetValue(
+                    "PlayerPhone",
+                    out It.Ref<byte[]?>.IsAny))
+                .Returns((string key, out byte[]? value) =>
+                {
+                    value = System.Text.Encoding.UTF8.GetBytes("4235550123");
+                    return true;
+                });
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Session = session.Object;
+
+            controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
+
+            // Configure TempData for this unit test because MVC does not
+            // initialize it automatically when we create the controller.
+            controller.TempData = new TempDataDictionary(
+                httpContext,
+                Mock.Of<ITempDataProvider>()
+            );
+
+            // Submit the correct code for Task 1.
+            var result = controller.SubmitCode(1, "BUC-001");
+            // Task 23.3: The feedback belongs to the submitted task.
+            Assert.Equal(1, controller.TempData["FeedbackTaskId"]);
+
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("Index", redirect.ActionName);
+
+            // Reload tasks to check the saved completion status.
+            var indexResult = Assert.IsType<ViewResult>(controller.Index());
+            var tasks = Assert.IsAssignableFrom<List<ParsedTasks>>(
+                indexResult.Model
+            );
+
+            Assert.True(tasks.Single(task => task.ID == 1).Completed);
+
+            // No other task should be completed.
+            Assert.All(
+                tasks.Where(task => task.ID != 1),
+                task => Assert.False(task.Completed)
+            );
+        }
+
+        // Task 22.2: An incorrect code must not save progress.
+        [Fact]
+        public void SubmitCode_InvalidCode_DoesNotChangeProgress()
+        {
+            using var environment = new IsolatedTestEnvironment();
+            var controller = new PlayerController(environment);
+
+            var session = new Mock<ISession>();
+
+            session.Setup(s => s.TryGetValue(
+                    "PlayerPhone",
+                    out It.Ref<byte[]?>.IsAny))
+                .Returns((string key, out byte[]? value) =>
+                {
+                    value = System.Text.Encoding.UTF8.GetBytes("4235550123");
+                    return true;
+                });
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Session = session.Object;
+
+            controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
+
+            // SubmitCode uses TempData when validation fails.
+            controller.TempData =
+                new Microsoft.AspNetCore.Mvc.ViewFeatures.TempDataDictionary(
+                    httpContext,
+                    Mock.Of<
+                        Microsoft.AspNetCore.Mvc.ViewFeatures.ITempDataProvider
+                    >()
+                );
+
+            // BUC-002 belongs to Task 2, not Task 1.
+            controller.SubmitCode(1, "BUC-002");
+
+            // Check that no task was marked complete.
+            var indexResult = Assert.IsType<ViewResult>(controller.Index());
+            var tasks = Assert.IsAssignableFrom<List<ParsedTasks>>(
+                indexResult.Model
+            );
+
+            Assert.All(tasks, task => Assert.False(task.Completed));
+        }
+
+        // Task 22.2: Completing a task must not affect another player.
+        [Fact]
+        public void SubmitCode_ValidCode_DoesNotChangeOtherPlayerProgress()
+        {
+            using var environment = new IsolatedTestEnvironment();
+            var controller = new PlayerController(environment);
+
+            var session = new Mock<ISession>();
+
+            // Allow the test to switch between Player A and Player B.
+            string activePhone = "4235550123";
+
+            session.Setup(s => s.TryGetValue(
+                    "PlayerPhone",
+                    out It.Ref<byte[]?>.IsAny))
+                .Returns((string key, out byte[]? value) =>
+                {
+                    value = System.Text.Encoding.UTF8.GetBytes(activePhone);
+                    return true;
+                });
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Session = session.Object;
+
+            controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
+            // Configure TempData for this unit test because MVC does not
+            // initialize it automatically when we create the controller.
+            controller.TempData = new TempDataDictionary(
+                httpContext,
+                Mock.Of<ITempDataProvider>()
+            );
+
+            // Player A completes Task 1.
+            controller.SubmitCode(1, "BUC-001");
+
+            // Switch to Player B.
+            activePhone = "4235550456";
+
+            var playerBResult = Assert.IsType<ViewResult>(controller.Index());
+            var playerBTasks = Assert.IsAssignableFrom<List<ParsedTasks>>(
+                playerBResult.Model
+            );
+
+            // Player B must not inherit Player A's completion.
+            Assert.False(
+                playerBTasks.Single(task => task.ID == 1).Completed
+            );
+
+            // Switch back to Player A to confirm completion was retained.
+            activePhone = "4235550123";
+
+            var playerAResult = Assert.IsType<ViewResult>(controller.Index());
+            var playerATasks = Assert.IsAssignableFrom<List<ParsedTasks>>(
+                playerAResult.Model
+            );
+
+            Assert.True(
+                playerATasks.Single(task => task.ID == 1).Completed
+            );
+        }
+
+        // Task 22.2: The old endpoint must not bypass code validation.
+        [Fact]
+        public void CompleteTask_WithoutCode_DoesNotSaveProgress()
+        {
+            using var environment = new IsolatedTestEnvironment();
+            var controller = new PlayerController(environment);
+
+            // Simulate a registered player.
+            var session = new Mock<ISession>();
+
+            session.Setup(s => s.TryGetValue(
+                    "PlayerPhone",
+                    out It.Ref<byte[]?>.IsAny))
+                .Returns((string key, out byte[]? value) =>
+                {
+                    value = System.Text.Encoding.UTF8.GetBytes("4235550123");
+                    return true;
+                });
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Session = session.Object;
+
+            controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
+
+            // The legacy endpoint writes a rejection message to TempData.
+            controller.TempData =
+                new Microsoft.AspNetCore.Mvc.ViewFeatures.TempDataDictionary(
+                    httpContext,
+                    Mock.Of<
+                        Microsoft.AspNetCore.Mvc.ViewFeatures.ITempDataProvider
+                    >()
+                );
+
+            // Attempt to complete Task 1 without a code.
+            var result = controller.CompleteTask(1);
+
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("Index", redirect.ActionName);
+
+            // Reload the player's tasks from saved progress.
+            var indexResult = Assert.IsType<ViewResult>(controller.Index());
+            var tasks = Assert.IsAssignableFrom<List<ParsedTasks>>(
+                indexResult.Model
+            );
+
+            // Task 1 must remain incomplete.
+            Assert.False(tasks.Single(task => task.ID == 1).Completed);
+
+            // No other task should be completed either.
+            Assert.All(tasks, task => Assert.False(task.Completed));
+        }
+
+
+        // Task 23.4: An invalid code must not change existing completion status.
+        [Fact]
+        public void SubmitCode_InvalidCode_PreservesPreviouslyCompletedTask()
+        {
+            using var environment = new IsolatedTestEnvironment();
+            var controller = new PlayerController(environment);
+
+            // Simulate a registered player.
+            var session = new Mock<ISession>();
+
+            session.Setup(s => s.TryGetValue(
+                    "PlayerPhone",
+                    out It.Ref<byte[]?>.IsAny))
+                .Returns((string key, out byte[]? value) =>
+                {
+                    value = System.Text.Encoding.UTF8.GetBytes("4235550123");
+                    return true;
+                });
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Session = session.Object;
+
+            controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
+
+            // Manually created controllers need TempData configured.
+            controller.TempData = new TempDataDictionary(
+                httpContext,
+                Mock.Of<ITempDataProvider>()
+            );
+
+            // First, successfully complete Task 1.
+            controller.SubmitCode(1, "BUC-001");
+
+            // Then submit an incorrect code for the same task.
+            var result = controller.SubmitCode(1, "WRONG-CODE");
+
+            // The invalid submission should redirect without changing progress.
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("Index", redirect.ActionName);
+
+            // Reload the tasks to check their current completion status.
+            var indexResult = Assert.IsType<ViewResult>(controller.Index());
+            var tasks = Assert.IsAssignableFrom<List<ParsedTasks>>(
+                indexResult.Model
+            );
+
+            // Task 1 must remain completed.
+            Assert.True(tasks.Single(task => task.ID == 1).Completed);
+
+            // All unrelated tasks must remain incomplete.
+            Assert.All(
+                tasks.Where(task => task.ID != 1),
+                task => Assert.False(task.Completed)
+            );
+        }
+
+
+
 
         // Creates separate files so tests do not change real player progress.
         public class IsolatedTestEnvironment : TestEnvironment, IDisposable
