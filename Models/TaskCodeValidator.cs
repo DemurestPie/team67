@@ -28,10 +28,15 @@ namespace BucHunt.Models
             }
 
             // Compare the submitted code to the configured code.
+            // Normalize the codes by removing leading/trailing spaces
+            // and ignoring capitalization
+            string normalizedSubmittedCode = submittedCode.Trim();
+            string normalizedCompletionCode = selectedTask.CompletionCode.Trim();
+            
             return string.Equals(
-                selectedTask.CompletionCode,
-                submittedCode,
-                StringComparison.Ordinal
+                normalizedCompletionCode,
+                normalizedSubmittedCode,
+                StringComparison.OrdinalIgnoreCase
             );
         }
     }

@@ -1,4 +1,3 @@
-
 using BucHunt.Models;
 
 namespace BucHunt.Tests
@@ -84,6 +83,32 @@ namespace BucHunt.Tests
 
             Assert.False(result);
         }
+
+        [Fact]
+        public void LowercaseCode_ReturnsTrue()
+        {
+            bool result = TaskCodeValidator.IsValid(
+                tasks, 1, "buc-001");
+
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void CodeWithSpaces_ReturnsTrue()
+        {
+            bool result = TaskCodeValidator.IsValid(
+                tasks, 1, "   BUC-001   ");
+
+            Assert.True(result);
+        }
+
+        [Fact]
+        public void MixedCaseCode_ReturnsTrue()
+        {
+            bool result = TaskCodeValidator.IsValid(
+                tasks, 1, "BuC-001");
+
+            Assert.True(result);
+        }
     }
 }
-
