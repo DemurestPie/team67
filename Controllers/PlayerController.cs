@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using BucHunt.Models;
+using System.Text.RegularExpressions;
+
 
 namespace team67.Controllers
 {
@@ -297,7 +299,7 @@ namespace team67.Controllers
                 return RedirectToAction("Index");
             }
 
-            // Load the saved progress for all players.
+// Load the saved progress for all players.
             Dictionary<string, HashSet<int>> progress =
                 LoadPlayerProgress();
 
