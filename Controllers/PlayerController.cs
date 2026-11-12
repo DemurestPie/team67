@@ -314,6 +314,11 @@ namespace team67.Controllers
             // Save the updated progress to the server.
             SavePlayerProgress(progress);
 
+            // Show a success message besides the tasks
+            // when the correct completion code is submitted.
+            TempData["SuccessMessage"] =
+                "Task completed successfully.";
+
             return RedirectToAction("Index");
         }
 
