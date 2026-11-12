@@ -408,6 +408,12 @@ namespace BucHunt.Tests
 
             // Submit the correct code for Task 1.
             var result = controller.SubmitCode(1, "BUC-001");
+
+            // Task 23.1: A valid code displays a success message.
+            Assert.Equal(
+                "Task completed successfully.",
+                controller.TempData["SuccessMessage"]
+            );
             // Task 23.3: The feedback belongs to the submitted task.
             Assert.Equal(1, controller.TempData["FeedbackTaskId"]);
 
@@ -466,6 +472,14 @@ namespace BucHunt.Tests
 
             // BUC-002 belongs to Task 2, not Task 1.
             controller.SubmitCode(1, "BUC-002");
+
+            // Task 23.1: An invalid code displays an error message.
+            Assert.Equal(
+                "Incorrect completion code.",
+                controller.TempData["ErrorMessage"]
+            );
+            // Task 23.3: The feedback belongs to the submitted task.
+            Assert.Equal(1, controller.TempData["FeedbackTaskId"]);
 
             // Check that no task was marked complete.
             var indexResult = Assert.IsType<ViewResult>(controller.Index());
