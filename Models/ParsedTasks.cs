@@ -1,3 +1,4 @@
+
 namespace BucHunt.Models
 {
     public class ParsedTasks
@@ -5,10 +6,17 @@ namespace BucHunt.Models
         public ParsedTasks()
         {
         }
+
         public int ID { get; set; }
+
         public string Label { get; set; } = string.Empty;
 
         public bool Completed { get; set; } = false;
+
+        // Stores the correct code for completing this task.
+        // Example: BUC-001 for Task 1.
+        public string CompletionCode { get; set; } = string.Empty;
+
         public ParsedTasks(int Id, string label)
         {
             ID = Id;

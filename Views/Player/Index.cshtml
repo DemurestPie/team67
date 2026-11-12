@@ -1,21 +1,41 @@
+
 @using BucHunt.Models
+@model List<ParsedTasks>
 
 @{
     ViewData["Title"] = "Hunt Tasks";
+
+    // Read feedback once so it can be matched to the submitted task.
+    int? feedbackTaskId = TempData["FeedbackTaskId"] is int id
+        ? id
+        : null;
+
+    string? errorMessage = TempData["ErrorMessage"] as string;
+    string? successMessage = TempData["SuccessMessage"] as string;
+
+    // Determine whether the submitted task exists in the displayed list.
+    // Errors for nonexistent tasks are shown above the list instead.
+    bool feedbackTaskExists =
+        feedbackTaskId.HasValue &&
+        Model.Any(task => task.ID == feedbackTaskId.Value);
 }
 
 <div class="text-left" style="margin-top: -60px;">
     <header>
-        <img src="~/assets/Hunt-Tasks-logo.png" alt="ScavengeRUS Logo" class="logos" style="margin-left: -100px;" />
+        <img src="~/assets/Hunt-Tasks-logo.png"
+             alt="ScavengeRUS Logo"
+             class="logos"
+             style="margin-left: -100px;" />
     </header>
 
     <section>
-        <h2>Available Tasks</h2>>
+        <h2>Available Tasks</h2>
 
-        @if (TempData["ErrorMessage"] != null)
+        @* Show errors here only when no displayed task matches the feedback. *@
+        @if (!feedbackTaskExists && !string.IsNullOrEmpty(errorMessage))
         {
             <div class="alert alert-danger" role="alert">
-                @TempData["ErrorMessage"]
+                @errorMessage
             </div>
         }
 
@@ -34,33 +54,66 @@
             <ul id="taskList">
                 @foreach (ParsedTasks task in Model)
                 {
-                    <li class="task-row mb-3 @(task.Completed ? "task-completed" : "")" data-task-id="@task.ID">
+<li class="task-row mb-3 @(task.Completed ? "task-completed" : "")"
+    data-task-id="@task.ID">
                         Task @task.ID: @task.Label
+
+                        @* Task 23.3: Show feedback only for the submitted task. *@
+                        @if (feedbackTaskId == task.ID)
+                        {
+                            @if (!string.IsNullOrEmpty(errorMessage))
+                            {
+                                <div class="alert alert-danger" role="alert">
+                                    @errorMessage
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrEmpty(successMessage))
+                            {
+                                <div class="alert alert-success" role="status">
+                                    @successMessage
+                                </div>
+                            }
+                        }
 
                         @if (!task.Completed)
                         {
-                            
-                
-                            <button type="button" id="btn-@task.ID" class="btn btn-primary" onclick="completeTask(@task.ID)">
-                                Complete Task
-                            </button>
+<button type="button"
+        id="btn-@task.ID"
+        class="btn btn-primary"
+        onclick="completeTask(@task.ID)">
+    Complete Task
+</button>
 
-                            <form id="completeTaskForm-@task.ID" asp-controller="Player" asp-action="CompleteTask" method="post" style="display: none;">
-                                <input type="hidden" name="taskId" value="@task.ID" />
+<form id="completeTaskForm-@task.ID"
+      asp-controller="Player"
+      asp-action="SubmitCode"
+      method="post"
+      style="display: none;">
 
-                                <input type="text" name="enteredCode" class="form-control" placeholder="BUC-001" required style="width: 85px; height: 34px; border-radius: 6px; font-size: 16px; text-transform: uppercase; font-weight: bold; padding: 4px 8px;" />
+    <input type="hidden" name="taskId" value="@task.ID" />
 
+    <input type="text"
+           name="code"
+           class="form-control"
+           placeholder="Enter code"
+           required
+           autocomplete="off"
+           style="width: 120px; height: 34px; border-radius: 6px; font-size: 16px; text-transform: uppercase; font-weight: bold; padding: 4px 8px;" />
 
-                                <button type="submit" class="btn btn-success" style="height: 42px; font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 16px; padding: 6px 16px;">
-                                    Submit
-                                </button>
-        
-                                 <!-- Large Cancel Button -->
-                                <button type="button" class="btn btn-secondary" onclick="cancelTask(@task.ID)" style="height: 42px; font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 16px; padding: 6px 16px;">
-                                    ✕
-                                </button>
-                            </form>
-                            
+    <button type="submit"
+            class="btn btn-success"
+            style="height: 42px; font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 16px; padding: 6px 16px;">
+        Submit
+    </button>
+
+    <button type="button"
+            class="btn btn-secondary"
+            onclick="cancelTask(@task.ID)"
+            style="height: 42px; font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 16px; padding: 6px 16px;">
+        ✕
+    </button>
+</form>
                         }
                         else
                         {
