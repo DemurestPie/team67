@@ -85,6 +85,15 @@
     Complete Task
 </button>
 
+@* Task 26.1: Display a QR scanning button for each incomplete task. *@
+@* The task ID identifies which task the player is attempting to complete. *@
+<button type="button"
+        id="scan-btn-@task.ID"
+        class="btn btn-outline-primary qr-scan-button"
+        data-task-id="@task.ID">
+    Scan QR Code
+</button>
+
 <form id="completeTaskForm-@task.ID"
       asp-controller="Player"
       asp-action="SubmitCode"
