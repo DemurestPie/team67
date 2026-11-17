@@ -23,50 +23,6 @@ namespace team67.Controllers
             environment = _environment;
         }
 
-        // PBI 34: Each JSON file in Data/Tasks contains the existing task array format.
-        // Keep progress data outside this folder so it is never treated as tasks.
-        private List<ParsedTasks> LoadTasks()
-        {
-            string taskFolder = Path.Combine(
-                environment.ContentRootPath, "Data", "Tasks"
-            );
-
-            var tasks = new List<ParsedTasks>();
-            var taskIds = new HashSet<int>();
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
-
-            // Sort filenames so the combined list has a predictable order.
-            foreach (string filePath in Directory.GetFiles(taskFolder, "*.json")
-                .OrderBy(path => path, StringComparer.Ordinal))
-            {
-                var fileTasks = JsonSerializer.Deserialize<List<ParsedTasks>>(
-                    System.IO.File.ReadAllText(filePath), options
-                ) ?? throw new JsonException("Task file must contain a task array.");
-
-                foreach (ParsedTasks task in fileTasks)
-                {
-                    // IDs must be unique across files because progress is stored by ID.
-                    if (task == null || !taskIds.Add(task.ID))
-                    {
-                        throw new JsonException("Task entries must have unique IDs.");
-                    }
-
-                    tasks.Add(task);
-                }
-            }
-
-            if (tasks.Count == 0)
-            {
-                throw new JsonException("Task files contain no task list.");
-            }
-
-            // Return only after every file passes validation; never use a partial hunt.
-            return tasks;
-        }
-
         // Loads saved player progress from the server.
         private Dictionary<string, HashSet<int>> LoadPlayerProgress()
         {
@@ -162,13 +118,37 @@ namespace team67.Controllers
 
             ViewBag.ActivePhone = currentPhone;
 
+            string filePath = Path.Combine(
+                environment.ContentRootPath,
+                "Data",
+                "tasks.json"
+            );
+
             List<ParsedTasks> parsedTasks =
                 new List<ParsedTasks>();
 
             try
             {
-                // PBI 34: Render the combined task list from every local task file.
-                parsedTasks = LoadTasks();
+                string jsonData =
+                    System.IO.File.ReadAllText(filePath);
+
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+
+                parsedTasks =
+                    JsonSerializer.Deserialize<List<ParsedTasks>>(
+                        jsonData,
+                        options
+                    ) ?? new List<ParsedTasks>();
+
+                if (parsedTasks.Count == 0)
+                {
+                    throw new JsonException(
+                        "Task file contains no task list."
+                    );
+                }
 
                 // Load the current player's progress from server storage.
                 Dictionary<string, HashSet<int>> progress =
@@ -216,8 +196,24 @@ namespace team67.Controllers
                 return false;
             }
 
-            // PBI 34: Validate against the same files used to display tasks.
-            List<ParsedTasks> tasks = LoadTasks();
+            // Find the file containing the hunt tasks.
+            string filePath = Path.Combine(
+                environment.ContentRootPath,
+                "Data",
+                "tasks.json"
+            );
+
+            // Read the tasks and their configured completion codes.
+            string jsonData = System.IO.File.ReadAllText(filePath);
+
+            List<ParsedTasks> tasks =
+                JsonSerializer.Deserialize<List<ParsedTasks>>(
+                    jsonData,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    }
+                ) ?? new List<ParsedTasks>();
 
             // Find the task that matches the submitted task ID.
             ParsedTasks? selectedTask =

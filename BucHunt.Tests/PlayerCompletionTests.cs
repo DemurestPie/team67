@@ -687,18 +687,15 @@ namespace BucHunt.Tests
                 string dataFolder = Path.Combine(ContentRootPath, "Data");
                 Directory.CreateDirectory(dataFolder);
 
-                // PBI 34: Copy all task files while keeping progress storage separate.
+                // Copy the hunt tasks into the temporary folder.
                 string projectPath = Path.GetFullPath(
                     Path.Combine(AppContext.BaseDirectory, "../../../../")
                 );
-                string taskFolder = Path.Combine(dataFolder, "Tasks");
-                Directory.CreateDirectory(taskFolder);
 
-                foreach (string taskFile in Directory.GetFiles(
-                    Path.Combine(projectPath, "Data", "Tasks"), "*.json"))
-                {
-                    File.Copy(taskFile, Path.Combine(taskFolder, Path.GetFileName(taskFile)));
-                }
+                File.Copy(
+                    Path.Combine(projectPath, "Data", "tasks.json"),
+                    Path.Combine(dataFolder, "tasks.json")
+                );
 
                 // Start with no completed tasks for either player.
                 File.WriteAllText(
