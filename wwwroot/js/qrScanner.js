@@ -78,3 +78,50 @@ function stopQrScanner(videoElement) {
         videoElement.srcObject = null;
     }
 }
+
+// Task 26.2: Connect each Scan QR Code button to the camera scanner.
+document.addEventListener("DOMContentLoaded", function () {
+    const scanButtons = document.querySelectorAll(".qr-scan-button");
+    const scannerContainer = document.getElementById("qrScannerContainer");
+    const videoElement = document.getElementById("qrScannerVideo");
+    const errorElement = document.getElementById("qrScannerError");
+    const cancelButton = document.getElementById("qrScannerCancel");
+
+    // Start the scanner for the task whose Scan QR Code button was clicked.
+    scanButtons.forEach(button => {
+        button.addEventListener("click", async function () {
+            const taskId = this.dataset.taskId;
+
+            // Clear any previous scanner error.
+            errorElement.textContent = "";
+            errorElement.style.display = "none";
+
+            // Show the camera area.
+            scannerContainer.style.display = "block";
+
+            try {
+                await startQrScanner(videoElement, function (scannedCode) {
+
+                    // Task 26.3: Pass the scanned QR value to the existing
+                    // task completion and validation system.
+                    submitScannedCode(taskId, scannedCode);
+                });
+            }
+            catch (error) {
+                // Show a useful message if camera access or QR scanning
+                // is unavailable in the player's browser.
+                errorElement.textContent = error.message;
+                errorElement.style.display = "block";
+            }
+        });
+    });
+
+    // Allow the player to cancel scanning without changing task progress.
+    cancelButton.addEventListener("click", function () {
+        stopQrScanner(videoElement);
+        scannerContainer.style.display = "none";
+
+        errorElement.textContent = "";
+        errorElement.style.display = "none";
+    });
+});
