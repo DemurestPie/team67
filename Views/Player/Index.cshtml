@@ -78,11 +78,13 @@
 
                         @if (!task.Completed)
                         {
+@* Task 27.1: Allow players to manually enter a completion code
+   as an alternative to scanning a QR code. *@
 <button type="button"
         id="btn-@task.ID"
         class="btn btn-primary"
         onclick="completeTask(@task.ID)">
-    Complete Task
+    Enter Code
 </button>
 
 @* Task 26.1: Display a QR scanning button for each incomplete task. *@
