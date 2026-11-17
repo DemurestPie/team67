@@ -13,9 +13,9 @@ namespace BucHunt.Tests
     public class TaskLoadingTests
     {
         [Fact]
-        public void Index_LoadsTasksFromJson()
+        public void Index_LoadsTasksFromMultipleJsonFiles()
         {
-            var environment = new TestEnvironment();
+            using var environment = new PlayerCompletionTests.IsolatedTestEnvironment();
             var controller = new PlayerController(environment);
 
             // Create a fake session for our registered test player.
@@ -50,6 +50,9 @@ namespace BucHunt.Tests
             Assert.Equal(8, tasks.Count);
             Assert.Equal(1, tasks[0].ID);
             Assert.Equal("Find the Buccaneer Statue", tasks[0].Label);
+            // PBI 34: The second file must also be included in the displayed model.
+            Assert.Equal(8, tasks[7].ID);
+            Assert.Equal("Locate a Designated Scavenger Hunt Checkpoint", tasks[7].Label);
             Assert.Null(controller.ViewBag.ErrorMessage);
         }
 
@@ -57,7 +60,7 @@ namespace BucHunt.Tests
         public void Index_DisplaysOnlyActivePlayersPhoneNumber()
         {
             // Arrange: Create the player controller.
-            var environment = new TestEnvironment();
+            using var environment = new PlayerCompletionTests.IsolatedTestEnvironment();
             var controller = new PlayerController(environment);
 
             var session = new Mock<ISession>();
