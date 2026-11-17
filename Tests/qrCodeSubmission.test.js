@@ -5,6 +5,12 @@ const { JSDOM } = require("jsdom");
 const fs = require("node:fs");
 const path = require("node:path");
 
+// Load the actual QR error handling JavaScript file.
+const errorScript = fs.readFileSync(
+    path.join(__dirname, "../wwwroot/js/qrCodeErrors.js"),
+    "utf8"
+);
+
 // Load the actual QR submission JavaScript file.
 const script = fs.readFileSync(
     path.join(__dirname, "../wwwroot/js/qrCodeSubmission.js"),
@@ -42,7 +48,10 @@ function createTestEnvironment(t) {
         });
     });
 
-    // Execute the actual production JavaScript.
+    // Load error handling before QR submission to match the Razor view.
+    dom.window.eval(errorScript);
+
+    // Execute the actual production QR submission JavaScript.
     dom.window.eval(script);
 
     // Close the isolated browser after each test.

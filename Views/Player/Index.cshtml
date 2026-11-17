@@ -96,6 +96,13 @@
     Scan QR Code
 </button>
 
+@* Task 27.3: Display scanning errors without changing task progress. *@
+<div id="qr-error-@task.ID"
+     class="alert alert-danger mt-2"
+     role="alert"
+     hidden>
+</div>
+
 <form id="completeTaskForm-@task.ID"
       asp-controller="Player"
       asp-action="SubmitCode"
@@ -139,6 +146,7 @@
 
 <script src="~/js/taskSorting.js"></script>
 <script src="~/js/completedTaskCodeForm.js"></script>
+<script src="~/js/qrCodeErrors.js"></script>
 <script src="~/js/qrCodeSubmission.js"></script>
 
 <script>
