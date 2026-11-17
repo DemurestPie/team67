@@ -1,3 +1,4 @@
+
 @using BucHunt.Models
 @model List<ParsedTasks>
 
@@ -53,9 +54,8 @@
             <ul id="taskList">
                 @foreach (ParsedTasks task in Model)
                 {
-                    <li class="task-row mb-3 @(task.Completed ? "task-completed" : "")"
-                        data-task-id="@task.ID">
-
+<li class="task-row mb-3 @(task.Completed ? "task-completed" : "")"
+    data-task-id="@task.ID">
                         Task @task.ID: @task.Label
 
                         @* Task 23.3: Show feedback only for the submitted task. *@
@@ -78,55 +78,42 @@
 
                         @if (!task.Completed)
                         {
-                            <button type="button"
-                                    id="btn-@task.ID"
-                                    class="btn btn-primary"
-                                    onclick="completeTask(@task.ID)">
-                                Complete Task
-                            </button>
+<button type="button"
+        id="btn-@task.ID"
+        class="btn btn-primary"
+        onclick="completeTask(@task.ID)">
+    Complete Task
+</button>
 
-                            @* Task 26.1: Display a QR scanning button for each incomplete task. *@
-                            @* The task ID identifies which task the player is attempting to complete. *@
-                            <button type="button"
-                                    id="scan-btn-@task.ID"
-                                    class="btn btn-outline-primary qr-scan-button"
-                                    data-task-id="@task.ID">
-                                Scan QR Code
-                            </button>
+<form id="completeTaskForm-@task.ID"
+      asp-controller="Player"
+      asp-action="SubmitCode"
+      method="post"
+      style="display: none;">
 
-                            @* Existing manual completion form. *@
-                            @* QR submissions will also use this form so both methods use the same validation. *@
-                            <form id="completeTaskForm-@task.ID"
-                                  asp-controller="Player"
-                                  asp-action="SubmitCode"
-                                  method="post"
-                                  style="display: none;">
+    <input type="hidden" name="taskId" value="@task.ID" />
 
-                                <input type="hidden"
-                                       name="taskId"
-                                       value="@task.ID" />
+    <input type="text"
+           name="code"
+           class="form-control"
+           placeholder="Enter code"
+           required
+           autocomplete="off"
+           style="width: 120px; height: 34px; border-radius: 6px; font-size: 16px; text-transform: uppercase; font-weight: bold; padding: 4px 8px;" />
 
-                                <input type="text"
-                                       name="code"
-                                       class="form-control"
-                                       placeholder="Enter code"
-                                       required
-                                       autocomplete="off"
-                                       style="width: 120px; height: 34px; border-radius: 6px; font-size: 16px; text-transform: uppercase; font-weight: bold; padding: 4px 8px;" />
+    <button type="submit"
+            class="btn btn-success"
+            style="height: 42px; font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 16px; padding: 6px 16px;">
+        Submit
+    </button>
 
-                                <button type="submit"
-                                        class="btn btn-success"
-                                        style="height: 42px; font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 16px; padding: 6px 16px;">
-                                    Submit
-                                </button>
-
-                                <button type="button"
-                                        class="btn btn-secondary"
-                                        onclick="cancelTask(@task.ID)"
-                                        style="height: 42px; font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 16px; padding: 6px 16px;">
-                                    ✕
-                                </button>
-                            </form>
+    <button type="button"
+            class="btn btn-secondary"
+            onclick="cancelTask(@task.ID)"
+            style="height: 42px; font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 16px; padding: 6px 16px;">
+        ✕
+    </button>
+</form>
                         }
                         else
                         {
@@ -135,46 +122,12 @@
                     </li>
                 }
             </ul>
-
-            @* Task 26.2: Camera area used when the player chooses to scan a QR code. *@
-            @* This stays hidden until one of the Scan QR Code buttons is clicked. *@
-            <div id="qrScannerContainer"
-                 style="display: none; margin-top: 20px;">
-
-                <h3>Scan QR Code</h3>
-
-                @* Displays the live camera feed while scanning. *@
-                <video id="qrScannerVideo"
-                       playsinline
-                       style="width: 100%; max-width: 400px;">
-                </video>
-
-                @* Displays camera or QR scanning errors to the player. *@
-                <div id="qrScannerError"
-                     class="alert alert-danger"
-                     style="display: none;">
-                </div>
-
-                @* Allows the player to stop scanning without changing task progress. *@
-                <button type="button"
-                        id="qrScannerCancel"
-                        class="btn btn-secondary">
-                    Cancel Scan
-                </button>
-            </div>
         }
     </section>
 </div>
 
-@* Existing task functionality. *@
 <script src="~/js/taskSorting.js"></script>
 <script src="~/js/completedTaskCodeForm.js"></script>
-
-@* Task 26.2: Handles browser camera access and QR code detection. *@
-<script src="~/js/qrScanner.js"></script>
-
-@* Task 26.3: Sends the scanned value through the existing completion validation. *@
-<script src="~/js/qrCodeSubmission.js"></script>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
