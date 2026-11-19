@@ -1,3 +1,4 @@
+
 @using BucHunt.Models
 @model List<ParsedTasks>
 
@@ -78,15 +79,15 @@
 
                         @if (!task.Completed)
                         {
+                            @* Task 27.1: Allow manual code entry as an alternative to QR scanning. *@
                             <button type="button"
                                     id="btn-@task.ID"
                                     class="btn btn-primary"
                                     onclick="completeTask(@task.ID)">
-                                Complete Task
+                                Enter Code
                             </button>
 
                             @* Task 26.1: Display a QR scanning button for each incomplete task. *@
-                            @* The task ID identifies which task the player is attempting to complete. *@
                             <button type="button"
                                     id="scan-btn-@task.ID"
                                     class="btn btn-outline-primary qr-scan-button"
@@ -94,8 +95,14 @@
                                 Scan QR Code
                             </button>
 
-                            @* Existing manual completion form. *@
-                            @* QR submissions will also use this form so both methods use the same validation. *@
+                            @* Task 27.3: Display scanning errors without changing task progress. *@
+                            <div id="qr-error-@task.ID"
+                                 class="alert alert-danger mt-2"
+                                 role="alert"
+                                 hidden>
+                            </div>
+
+                            @* Manual and QR submissions share the same completion form and validation. *@
                             <form id="completeTaskForm-@task.ID"
                                   asp-controller="Player"
                                   asp-action="SubmitCode"
@@ -170,14 +177,17 @@
 <script src="~/js/taskSorting.js"></script>
 <script src="~/js/completedTaskCodeForm.js"></script>
 
+@* Task 27.3: Handle scanning errors and provide manual entry guidance. *@
+<script src="~/js/qrCodeErrors.js"></script>
+
+@* Task 26.3: Submit decoded codes through the existing validation system. *@
+<script src="~/js/qrCodeSubmission.js"></script>
+
 @* Cross-browser QR code scanning library. *@
 <script src="~/js/html5-qrcode.min.js"></script>
 
 @* Task 26.2: Handles browser camera access and QR code detection. *@
 <script src="~/js/qrScanner.js"></script>
-
-@* Task 26.3: Sends the scanned value through the existing completion validation. *@
-<script src="~/js/qrCodeSubmission.js"></script>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
