@@ -1,83 +1,105 @@
-let qrVideoStream = null;
-let qrScanTimer = null;
+let qrScanner = null;
+let activeVideoElement = null;
 
 async function startQrScanner(videoElement, onCodeDetected) {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error("Camera access is not supported by this browser.");
     }
 
-    if (!("BarcodeDetector" in window)) {
-        throw new Error("QR scanning is not supported by this browser.");
+    if (typeof Html5Qrcode === "undefined") {
+        throw new Error("QR scanner could not be loaded.");
     }
 
     try {
-        qrVideoStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: "environment"
-            },
-            audio: false
-        });
+        activeVideoElement = videoElement;
 
-        videoElement.srcObject = qrVideoStream;
-        await videoElement.play();
+        // html5-qrcode needs an element to render the camera scanner into.
+        let scannerElement = document.getElementById("html5QrScanner");
 
-        const detector = new BarcodeDetector({
-            formats: ["qr_code"]
-        });
+        if (!scannerElement) {
+            scannerElement = document.createElement("div");
+            scannerElement.id = "html5QrScanner";
 
-        async function scanFrame() {
-            if (!qrVideoStream) {
-                return;
-            }
-
-            try {
-                const barcodes = await detector.detect(videoElement);
-
-                if (barcodes.length > 0) {
-                    const scannedCode = barcodes[0].rawValue;
-
-                    stopQrScanner(videoElement);
-
-                    if (onCodeDetected) {
-                        onCodeDetected(scannedCode);
-                    }
-
-                    return;
-                }
-            }
-            catch (error) {
-                console.error("QR scan failed:", error);
-            }
-
-            qrScanTimer = setTimeout(scanFrame, 250);
+            videoElement.parentNode.insertBefore(
+                scannerElement,
+                videoElement
+            );
         }
 
-        scanFrame();
+        // Hide the old video element because html5-qrcode
+        // creates and manages its own camera preview.
+        videoElement.style.display = "none";
+
+        qrScanner = new Html5Qrcode("html5QrScanner");
+
+        await qrScanner.start(
+            {
+                facingMode: "environment"
+            },
+            {
+                fps: 10,
+                qrbox: {
+                    width: 250,
+                    height: 250
+                }
+            },
+            async function (decodedText) {
+
+                // Stop the camera after a QR code is successfully detected.
+                await stopQrScanner(videoElement);
+
+                if (onCodeDetected) {
+                    onCodeDetected(decodedText);
+                }
+            },
+            function () {
+                // QR scan failures are normal while the camera
+                // is looking for a code, so nothing is shown here.
+            }
+        );
     }
     catch (error) {
         console.error("Unable to start QR scanner:", error);
+
+        await stopQrScanner(videoElement);
+
         throw error;
     }
 }
 
-function stopQrScanner(videoElement) {
-    if (qrScanTimer) {
-        clearTimeout(qrScanTimer);
-        qrScanTimer = null;
+async function stopQrScanner(videoElement) {
+    if (qrScanner) {
+        try {
+            await qrScanner.stop();
+        }
+        catch (error) {
+            console.log("QR scanner was already stopped.");
+        }
+
+        try {
+            qrScanner.clear();
+        }
+        catch (error) {
+            console.log("QR scanner could not be cleared.");
+        }
+
+        qrScanner = null;
     }
 
-    if (qrVideoStream) {
-        qrVideoStream.getTracks().forEach(track => {
-            track.stop();
-        });
+    const scannerElement = document.getElementById("html5QrScanner");
 
-        qrVideoStream = null;
+    if (scannerElement) {
+        scannerElement.innerHTML = "";
     }
 
     if (videoElement) {
+        videoElement.style.display = "";
         videoElement.srcObject = null;
     }
+
+    activeVideoElement = null;
 }
+
 
 // Task 26.2: Connect each Scan QR Code button to the camera scanner.
 document.addEventListener("DOMContentLoaded", function () {
@@ -87,38 +109,49 @@ document.addEventListener("DOMContentLoaded", function () {
     const errorElement = document.getElementById("qrScannerError");
     const cancelButton = document.getElementById("qrScannerCancel");
 
-    // Start the scanner for the task whose Scan QR Code button was clicked.
+    // Stop if the scanner interface is not available on this page.
+    if (!scannerContainer || !videoElement || !errorElement || !cancelButton) {
+        return;
+    }
+
     scanButtons.forEach(button => {
         button.addEventListener("click", async function () {
             const taskId = this.dataset.taskId;
 
-            // Clear any previous scanner error.
             errorElement.textContent = "";
             errorElement.style.display = "none";
 
-            // Show the camera area.
             scannerContainer.style.display = "block";
 
             try {
-                await startQrScanner(videoElement, function (scannedCode) {
+                // Stop an existing scanner before starting another one.
+                if (qrScanner) {
+                    await stopQrScanner(videoElement);
+                }
 
-                    // Task 26.3: Pass the scanned QR value to the existing
-                    // task completion and validation system.
-                    submitScannedCode(taskId, scannedCode);
-                });
+                await startQrScanner(
+                    videoElement,
+                    function (scannedCode) {
+
+                        // Task 26.3: Use the existing task completion
+                        // and validation system.
+                        submitScannedCode(taskId, scannedCode);
+                    }
+                );
             }
             catch (error) {
-                // Show a useful message if camera access or QR scanning
-                // is unavailable in the player's browser.
-                errorElement.textContent = error.message;
+                errorElement.textContent =
+                    error.message || "Unable to start QR scanner.";
+
                 errorElement.style.display = "block";
             }
         });
     });
 
-    // Allow the player to cancel scanning without changing task progress.
-    cancelButton.addEventListener("click", function () {
-        stopQrScanner(videoElement);
+    // Cancel scanning without changing player progress.
+    cancelButton.addEventListener("click", async function () {
+        await stopQrScanner(videoElement);
+
         scannerContainer.style.display = "none";
 
         errorElement.textContent = "";
